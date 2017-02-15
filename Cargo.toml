@@ -1,0 +1,6 @@
+[package]
+name = "plot"
+version = "0.1.0"
+authors = ["Matt Williams <matt@milliams.com>"]
+
+[dependencies]
