@@ -1,3 +1,6 @@
+extern crate clap;
+use clap::{Arg, App, SubCommand};
+
 use std::io::{self, BufRead};
 
 fn main() {
