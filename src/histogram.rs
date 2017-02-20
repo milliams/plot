@@ -53,6 +53,17 @@ fn round_down_to_sig_fig(value: u32, figures: usize) -> u32 {
     r.parse::<u32>().unwrap()
 }
 
+/// Given a maximum frequency for the histogram, work out how many ticks to display on the y-axis
+fn calc_tick_step_for_frequency(max: u32) -> u32 {
+    let base_steps = [1, 2, 4, 5]; // sensible types of step values
+    // We want to scale the base_steps by some power of 10
+    let base_step_scale = ((max / 3) as f64).log10() as u32;
+    let steps = Vec::from_iter(base_steps.iter().map(|s| s * 10u32.pow(base_step_scale)));
+
+    let default_step = 1;
+    *steps.iter().rev().find(|&try_step| max / try_step >= 3).unwrap_or(&default_step)
+}
+
 /// Given a upper bound, calculate the sensible places to place the ticks
 fn calculate_ticks_frequency(max: u32) {
     let top_value = round_down_to_sig_fig(max, 1);
@@ -63,4 +74,32 @@ fn test_rounding() {
     assert_eq!(round_down_to_sig_fig(10, 1), 10);
     assert_eq!(round_down_to_sig_fig(11, 1), 10);
     assert_eq!(round_down_to_sig_fig(4573, 2), 4500);
+}
+
+#[test]
+fn test_calculate_tick_step() {
+    for i in 1..6 {
+        assert_eq!(calc_tick_step_for_frequency(i), 1);
+    }
+    for i in 6..12 {
+        assert_eq!(calc_tick_step_for_frequency(i), 2);
+    }
+    for i in 12..15 {
+        assert_eq!(calc_tick_step_for_frequency(i), 4);
+    }
+    for i in 15..30 {
+        assert_eq!(calc_tick_step_for_frequency(i), 5);
+    }
+    for i in 30..60 {
+        assert_eq!(calc_tick_step_for_frequency(i), 10);
+    }
+    for i in 60..120 {
+        assert_eq!(calc_tick_step_for_frequency(i), 20);
+    }
+    for i in 120..150 {
+        assert_eq!(calc_tick_step_for_frequency(i), 40);
+    }
+    for i in 150..300 {
+        assert_eq!(calc_tick_step_for_frequency(i), 50);
+    }
 }
