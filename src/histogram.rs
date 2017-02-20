@@ -44,10 +44,23 @@ impl Histogram {
     }
 }
 
+
+/// A slow way to round an integer down to a number of significant figures
+fn round_down_to_sig_fig(value: u32, figures: usize) -> u32 {
+    let s = value.to_string();
+    let r_map = s.chars().enumerate().map(|(i, ch)| if i >= figures { '0' } else { ch });
+    let r = String::from_iter(r_map);
+    r.parse::<u32>().unwrap()
+}
+
 /// Given a upper bound, calculate the sensible places to place the ticks
 fn calculate_ticks_frequency(max: u32) {
-    let num_ticks = 4;
+    let top_value = round_down_to_sig_fig(max, 1);
 }
 
 #[test]
-fn it_works() {}
+fn test_rounding() {
+    assert_eq!(round_down_to_sig_fig(10, 1), 10);
+    assert_eq!(round_down_to_sig_fig(11, 1), 10);
+    assert_eq!(round_down_to_sig_fig(4573, 2), 4500);
+}
