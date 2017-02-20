@@ -1,8 +1,11 @@
+//! A command-line plotting tool
+
 extern crate clap;
 use clap::{Arg, App, SubCommand};
 
 use std::io::{self, BufRead};
-use std::iter::FromIterator;
+
+mod histogram;
 
 fn main() {
     let matches = App::new("Command-line stats")
@@ -37,47 +40,10 @@ fn get_single_column() -> Vec<f64> {
     return data;
 }
 
-#[derive(Debug)]
-struct Histogram {
-    bin_bounds: Vec<f64>, // will have N_bins + 1 entries
-    bin_counts: Vec<i32>, // will have N_bins entries
-    bin_densities: Vec<f64>, // will have N_bins entries
-}
-
-impl Histogram {
-    pub fn from_vec(v: &Vec<f64>) -> Histogram {
-
-        let max = v.iter().fold(-1. / 0., |a, &b| f64::max(a, b)) + 0.0000001; // TODO: use a next_after equivalent
-        let min = v.iter().fold(1. / 0., |a, &b| f64::min(a, b));
-
-        let num_bins = 10; // Number of bins
-
-        let mut bins = vec![0; num_bins];
-
-        let bin_width = (max - min) / num_bins as f64; // width of bin in real units
-
-        for &val in v.iter() {
-            let bin = ((val - min) / bin_width) as usize;
-            bins[bin] += 1;
-        }
-        let density_per_bin = Vec::from_iter(bins.iter().map(|&x| x as f64 / bin_width));
-
-        Histogram {
-            bin_bounds: vec![], // TODO
-            bin_counts: bins,
-            bin_densities: density_per_bin,
-        }
-    }
-
-    pub fn num_bins(&self) -> usize {
-        self.bin_counts.len()
-    }
-}
-
 fn hist() {
     let data = get_single_column();
 
-    let h = Histogram::from_vec(&data);
+    let h = histogram::Histogram::from_vec(&data);
 
     let plot_width = h.num_bins() * 3;
     let plot_height = 30;
@@ -90,7 +56,8 @@ fn hist() {
         let axis_label = " ".to_string(); // TODO: or largest_bin_count or blank
         let mut cols = String::new();
         for &bin_count in h.bin_counts.iter() {
-            let bin_height_fraction = bin_count as f32 / *largest_bin_count as f32; // between 0..1 how full the bin is compared to largest
+            // between 0..1 how full the bin is compared to largest
+            let bin_height_fraction = bin_count as f32 / *largest_bin_count as f32;
             let bin_height_characters = (bin_height_fraction * plot_height as f32) as i32;
             if bin_height_characters >= plot_height - line {
                 cols.push_str("###");
@@ -113,9 +80,6 @@ fn hist() {
     //println!("{:?}", bins);
 }
 
-/// Given a range of numbers, calculate where is best to place the ticks
-fn calculate_ticks(lower: f64, upper: f64) {}
-
 fn average() {
     let stdin = io::stdin();
     let mut total = 0.0;
@@ -131,6 +95,3 @@ fn average() {
 
     println!("{}", total / length as f64);
 }
-
-#[test]
-fn it_works() {}
