@@ -58,9 +58,11 @@ fn hist() {
         for &bin_count in h.bin_counts.iter() {
             // between 0..1 how full the bin is compared to largest
             let bin_height_fraction = bin_count as f32 / *largest_bin_count as f32;
-            let bin_height_characters = (bin_height_fraction * plot_height as f32) as i32;
-            if bin_height_characters >= plot_height - line {
-                cols.push_str("###");
+            let bin_height_characters = (bin_height_fraction * plot_height as f32) as u32;
+            if bin_height_characters == plot_height - line {
+                cols.push_str("___");
+            } else if bin_height_characters > plot_height - line {
+                cols.push_str("| |");
             } else {
                 cols.push_str("   ");
             }
