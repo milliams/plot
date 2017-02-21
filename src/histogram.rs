@@ -10,7 +10,7 @@ use std::iter::FromIterator;
 #[derive(Debug)]
 pub struct Histogram {
     pub bin_bounds: Vec<f64>, // will have N_bins + 1 entries
-    pub bin_counts: Vec<i32>, // will have N_bins entries
+    pub bin_counts: Vec<u32>, // will have N_bins entries
     pub bin_densities: Vec<f64>, // will have N_bins entries
 }
 
@@ -65,7 +65,7 @@ fn calc_tick_step_for_frequency(max: u32) -> u32 {
 }
 
 /// Given a upper bound, calculate the sensible places to place the ticks
-fn calculate_ticks_frequency(max: u32) -> Vec<u32> {
+pub fn calculate_ticks_frequency(max: u32) -> Vec<u32> {
     let tick_step = calc_tick_step_for_frequency(max);
     Vec::from_iter((0..max + 1).filter(|i| i % tick_step == 0))
 }

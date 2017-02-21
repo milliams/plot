@@ -4,6 +4,7 @@ extern crate clap;
 use clap::{Arg, App, SubCommand};
 
 use std::io::{self, BufRead};
+use std::iter::FromIterator;
 
 mod histogram;
 
@@ -50,7 +51,9 @@ fn hist() {
 
     let largest_bin_count = h.bin_counts.iter().max().unwrap();
 
-    let longest_y_label_width = largest_bin_count.to_string().len();
+    let ticks = histogram::calculate_ticks_frequency(*largest_bin_count);
+
+    let longest_y_label_width = ticks.iter().map(|n| n.to_string().len()).max().unwrap();
 
     for line in 0..plot_height {
         let axis_label = " ".to_string(); // TODO: or largest_bin_count or blank
