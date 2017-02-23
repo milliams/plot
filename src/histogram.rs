@@ -20,7 +20,7 @@ impl Histogram {
         let max = v.iter().fold(-1. / 0., |a, &b| f64::max(a, b)) + 0.0000001; //TODO use next_after
         let min = v.iter().fold(1. / 0., |a, &b| f64::min(a, b));
 
-        let num_bins = 10; // Number of bins
+        let num_bins = 30; // Number of bins
 
         let mut bins = vec![0; num_bins];
 
