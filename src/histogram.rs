@@ -44,15 +44,6 @@ impl Histogram {
     }
 }
 
-
-/// A slow way to round an integer down to a number of significant figures
-fn round_down_to_sig_fig(value: u32, figures: usize) -> u32 {
-    let s = value.to_string();
-    let r_map = s.chars().enumerate().map(|(i, ch)| if i >= figures { '0' } else { ch });
-    let r = String::from_iter(r_map);
-    r.parse::<u32>().unwrap()
-}
-
 /// Given a maximum frequency for the histogram, work out how many ticks to display on the y-axis
 fn calc_tick_step_for_frequency(max: u32) -> u32 {
     let base_steps = [1, 2, 4, 5]; // sensible types of step values
@@ -68,13 +59,6 @@ fn calc_tick_step_for_frequency(max: u32) -> u32 {
 pub fn calculate_ticks_frequency(max: u32) -> Vec<u32> {
     let tick_step = calc_tick_step_for_frequency(max);
     Vec::from_iter((0..max + 1).filter(|i| i % tick_step == 0))
-}
-
-#[test]
-fn test_rounding() {
-    assert_eq!(round_down_to_sig_fig(10, 1), 10);
-    assert_eq!(round_down_to_sig_fig(11, 1), 10);
-    assert_eq!(round_down_to_sig_fig(4573, 2), 4500);
 }
 
 #[test]
