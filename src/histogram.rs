@@ -63,29 +63,22 @@ pub fn calculate_ticks_frequency(max: u32) -> Vec<u32> {
 
 #[test]
 fn test_calculate_tick_step() {
-    for i in 1..6 {
-        assert_eq!(calc_tick_step_for_frequency(i), 1);
-    }
-    for i in 6..12 {
-        assert_eq!(calc_tick_step_for_frequency(i), 2);
-    }
-    for i in 12..15 {
-        assert_eq!(calc_tick_step_for_frequency(i), 4);
-    }
-    for i in 15..30 {
-        assert_eq!(calc_tick_step_for_frequency(i), 5);
-    }
-    for i in 30..60 {
-        assert_eq!(calc_tick_step_for_frequency(i), 10);
-    }
-    for i in 60..120 {
-        assert_eq!(calc_tick_step_for_frequency(i), 20);
-    }
-    for i in 120..150 {
-        assert_eq!(calc_tick_step_for_frequency(i), 40);
-    }
-    for i in 150..300 {
-        assert_eq!(calc_tick_step_for_frequency(i), 50);
+    use std::collections::HashMap;
+    let mut steps = HashMap::new();
+    steps.insert(1..6, 1);
+    steps.insert(6..12, 2);
+    steps.insert(12..15, 4);
+    steps.insert(15..30, 5);
+    steps.insert(30..60, 10);
+    steps.insert(60..120, 20);
+    steps.insert(120..150, 40);
+    steps.insert(150..300, 50);
+    let steps = steps;
+
+    for (range, step) in steps {
+        for i in range {
+            assert_eq!(calc_tick_step_for_frequency(i), step);
+        }
     }
 }
 
