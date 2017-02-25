@@ -33,23 +33,96 @@ fn test_distribute_ticks() {
                ["0", "1", "", "2", "", "3", "4", "", "5", ""]);
 }
 
-/// Given a maximum frequency for the histogram, work out how many ticks to display on the y-axis
-fn calc_tick_step_for_range(min: f64, max: f64) -> f64 {
-    if max - min > 1.0 {
-        // We are working on a larger range so we can use integer representations
-        1.0
+/// The base units for the step sizes
+/// They should be within one order of magnitude, e.g. [1,10)
+const BASE_STEPS: [u32; 4] = [1, 2, 4, 5];
+
+#[derive(Debug)]
+struct TickSteps {
+    next: u32,
+}
+
+impl TickSteps {
+    fn new() -> TickSteps {
+        TickSteps::start_at(1)
+    }
+
+    fn start_at(start: u32) -> TickSteps {
+        let start_options = TickSteps::scaled_steps(&start);
+        let overflow: u32 = start_options[0] * 10;
+        let curr = start_options.iter().skip_while(|&step| step < &start).next();
+
+        TickSteps { next: *curr.unwrap_or(&overflow) }
+    }
+
+    fn scaled_steps(curr: &u32) -> Vec<u32> {
+        let base_step_scale = 10u32.pow((*curr as f64).log10() as u32);
+        Vec::from_iter(BASE_STEPS.iter().map(|s| s * base_step_scale))
+    }
+}
+
+impl Iterator for TickSteps {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        let curr = self.next; // cache the value we're currently on
+        let curr_steps = TickSteps::scaled_steps(&self.next);
+        let overflow: u32 = curr_steps[0] * 10;
+        self.next = *curr_steps.iter().skip_while(|&s| s <= &curr).next().unwrap_or(&overflow);
+        Some(curr)
+    }
+}
+
+#[test]
+fn test_tick_step_generator() {
+    let t = TickSteps::new();
+    let ts = Vec::from_iter(t.take(7));
+    assert_eq!(ts, [1, 2, 4, 5, 10, 20, 40]);
+
+    let t = TickSteps::start_at(100);
+    let ts = Vec::from_iter(t.take(5));
+    assert_eq!(ts, [100, 200, 400, 500, 1000]);
+
+    let t = TickSteps::start_at(3);
+    let ts = Vec::from_iter(t.take(5));
+    assert_eq!(ts, [4, 5, 10, 20, 40]);
+
+    let t = TickSteps::start_at(3.6 as u32);
+    let ts = Vec::from_iter(t.take(3));
+    assert_eq!(ts, [4, 5, 10]);
+
+    let t = TickSteps::start_at(8);
+    let ts = Vec::from_iter(t.take(3));
+    assert_eq!(ts, [10, 20, 40]);
+
+    let t = TickSteps::start_at(7.5 as u32);
+    let ts = Vec::from_iter(t.take(3));
+    assert_eq!(ts, [10, 20, 40]);
+}
+
+/// Given a range of values, and a maximum number fo ticks, calulate the step between the ticks
+fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 {
+    let range = max - min;
+    if range > 1.0 {
+        let min_tick_step = range / max_ticks as f64;
+        let tick_step = TickSteps::start_at(min_tick_step as u32).next();
+        tick_step.expect("ERROR: We've somehow run out of tick step options!") as f64
     } else {
         // We are on some small range so will need to be careful to represent the ticks correctly
         0.1 // TODO Be just a tad cleverer than this...
     }
 }
 
+#[test]
+fn test_calculate_tick_step_for_range() {
+    assert_eq!(calculate_tick_step_for_range(-7.93, 15.58, 6), 4.0);
+}
+
 /// Given a maximum frequency for the histogram, work out how many ticks to display on the y-axis
-fn calc_tick_step_for_frequency(max: u32) -> u32 {
-    let base_steps = [1, 2, 4, 5]; // sensible types of step values
-    // We want to scale the base_steps by some power of 10
+fn calculate_tick_step_for_frequency(max: u32) -> u32 {
+    // We want to scale the BASE_STEPS by some power of 10
     let base_step_scale = ((max / 3) as f64).log10() as u32;
-    let steps = Vec::from_iter(base_steps.iter().map(|s| s * 10u32.pow(base_step_scale)));
+    let steps = Vec::from_iter(BASE_STEPS.iter().map(|s| s * 10u32.pow(base_step_scale)));
 
     let default_step = 1;
     *steps.iter().rev().find(|&try_step| max / try_step >= 3).unwrap_or(&default_step)
@@ -57,7 +130,7 @@ fn calc_tick_step_for_frequency(max: u32) -> u32 {
 
 /// Given a upper bound, calculate the sensible places to place the ticks
 fn calculate_ticks_frequency(max: u32) -> Vec<u32> {
-    let tick_step = calc_tick_step_for_frequency(max);
+    let tick_step = calculate_tick_step_for_frequency(max);
     Vec::from_iter((0..max + 1).filter(|i| i % tick_step == 0))
 }
 
@@ -78,7 +151,7 @@ fn test_calculate_tick_step() {
 
     for (range, step) in steps {
         for i in range {
-            assert_eq!(calc_tick_step_for_frequency(i), step);
+            assert_eq!(calculate_tick_step_for_frequency(i), step);
         }
     }
 }

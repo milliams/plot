@@ -74,7 +74,7 @@ fn average() {
 
 fn stats() {
     let data = get_single_column();
-    
+
     let max = data.iter().fold(-1. / 0., |a, &b| f64::max(a, b));
     let min = data.iter().fold(1. / 0., |a, &b| f64::min(a, b));
     let total: f64 = data.iter().sum();
