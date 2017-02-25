@@ -199,15 +199,23 @@ fn test_calculate_ticks() {
     assert_eq!(calculate_ticks_frequency(3475), [0, 1000, 2000, 3000]);
 }
 
+// Given a value like a tick label or a bin count,
+// calculate how far from the x-axis it should be plotted
+fn value_to_distance_from_x_axis(value: u32, max: u32, face_lines: u32) -> u32 {
+    let data_per_cell_height = max as f64 / face_lines as f64;
+    (value as f64 / data_per_cell_height).round() as u32
+}
+
 /// Given a list of ticks to display,
 /// the total scale of the axis
 /// and the number of lines to work with,
 /// produce the label for each line of the axis
-pub fn distribute_y_ticks(ticks: Vec<u32>, max: u32, axis_lines: u32) -> Vec<String> {
+pub fn distribute_y_ticks(ticks: Vec<u32>, max: u32, face_lines: u32) -> Vec<String> {
+    // map of distance from x-axis to tick value
     let m: HashMap<_, _> = ticks.iter()
-        .map(|&tick| (((tick as f64 / max as f64) * axis_lines as f64) as u32, tick))
+        .map(|&tick| (value_to_distance_from_x_axis(tick, max, face_lines), tick))
         .collect();
-    let p = (0..axis_lines).map(|line| if m.contains_key(&line) {
+    let p = (0..face_lines+1).map(|line| if m.contains_key(&line) {
         m[&line].to_string()
     } else {
         "".to_string()
@@ -217,16 +225,17 @@ pub fn distribute_y_ticks(ticks: Vec<u32>, max: u32, axis_lines: u32) -> Vec<Str
 
 #[test]
 fn test_distribute_ticks() {
-    //assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5, 6),
-    //           ["0", "1", "2", "3", "4", "5"]);
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5, 5),
+               ["0", "1", "2", "3", "4", "5"]);
+
     assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 7),
-               ["0", "1", "2", "3", "4", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 8),
                ["0", "1", "2", "", "3", "4", "5", ""]);
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 8),
+               ["0", "1", "", "2", "3", "4", "", "5", ""]);
     assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 9),
-               ["0", "1", "", "2", "3", "", "4", "5", ""]);
+               ["0", "", "1", "2", "", "3", "4", "", "5", ""]);
     assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 10),
-               ["0", "1", "", "2", "", "3", "4", "", "5", ""]);
+               ["0", "", "1", "2", "", "3", "", "4", "5", "", ""]);
 }
 
 pub fn draw_histogram(h: histogram::Histogram) {
