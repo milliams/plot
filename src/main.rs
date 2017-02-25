@@ -14,10 +14,15 @@ fn main() {
         .subcommand(SubCommand::with_name("average")
             .about("computes the average of the input stream"))
         .subcommand(SubCommand::with_name("hist").about("plots a histogram of the data"))
+        .subcommand(SubCommand::with_name("stats").about("print some statistica about the data"))
         .get_matches();
 
     if matches.subcommand_matches("average").is_some() {
         average();
+    }
+
+    if matches.subcommand_matches("stats").is_some() {
+        stats();
     }
 
     if matches.subcommand_matches("hist").is_some() {
@@ -65,4 +70,17 @@ fn average() {
     }
 
     println!("{}", total / length as f64);
+}
+
+fn stats() {
+    let data = get_single_column();
+    
+    let max = data.iter().fold(-1. / 0., |a, &b| f64::max(a, b));
+    let min = data.iter().fold(1. / 0., |a, &b| f64::min(a, b));
+    let total: f64 = data.iter().sum();
+    let average = total / data.len() as f64;
+
+    println!("    Max: {}", max);
+    println!("    Min: {}", min);
+    println!("Average: {}", average);
 }
