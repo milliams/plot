@@ -37,16 +37,12 @@ fn test_distribute_ticks() {
 /// They should be within one order of magnitude, e.g. [1,10)
 const BASE_STEPS: [u32; 4] = [1, 2, 4, 5];
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct TickSteps {
     next: u32,
 }
 
 impl TickSteps {
-    fn new() -> TickSteps {
-        TickSteps::start_at(1)
-    }
-
     fn start_at(start: u32) -> TickSteps {
         let start_options = TickSteps::scaled_steps(&start);
         let overflow: u32 = start_options[0] * 10;
@@ -75,7 +71,7 @@ impl Iterator for TickSteps {
 
 #[test]
 fn test_tick_step_generator() {
-    let t = TickSteps::new();
+    let t = TickSteps::start_at(1);
     let ts = Vec::from_iter(t.take(7));
     assert_eq!(ts, [1, 2, 4, 5, 10, 20, 40]);
 
@@ -87,26 +83,73 @@ fn test_tick_step_generator() {
     let ts = Vec::from_iter(t.take(5));
     assert_eq!(ts, [4, 5, 10, 20, 40]);
 
-    let t = TickSteps::start_at(3.6 as u32);
-    let ts = Vec::from_iter(t.take(3));
-    assert_eq!(ts, [4, 5, 10]);
-
     let t = TickSteps::start_at(8);
-    let ts = Vec::from_iter(t.take(3));
-    assert_eq!(ts, [10, 20, 40]);
-
-    let t = TickSteps::start_at(7.5 as u32);
     let ts = Vec::from_iter(t.take(3));
     assert_eq!(ts, [10, 20, 40]);
 }
 
-/// Given a range of values, and a maximum number fo ticks, calulate the step between the ticks
+fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
+    let mut ticks: Vec<f64> = vec![];
+    if min <= 0.0 {
+        if max >= 0.0 {
+            // standard spanning axis
+            ticks.push(0.0);
+            ticks.extend((1..).map(|n| -1.0 * n as f64 * step_size).take_while(|&v| v >= min));
+            ticks.extend((1..).map(|n| n as f64 * step_size).take_while(|&v| v <= max));
+        } else {
+            // entirely negative axis
+            ticks.extend((1..)
+                .map(|n| -1.0 * n as f64 * step_size)
+                .skip_while(|&v| v > max)
+                .take_while(|&v| v >= min));
+        }
+    } else {
+        // entirely positive axis
+        ticks.extend((1..)
+            .map(|n| n as f64 * step_size)
+            .skip_while(|&v| v < min)
+            .take_while(|&v| v <= max));
+    }
+    ticks.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    ticks
+}
+
+/// Given a range and a step size, work out how many ticks will be displayed
+fn number_of_ticks(min: f64, max: f64, step_size: f64) -> u32 {
+    generate_ticks(min, max, step_size).len() as u32
+}
+
+#[test]
+fn test_number_of_ticks() {
+    assert_eq!(number_of_ticks(-7.93, 15.58, 4.0), 5);
+    assert_eq!(number_of_ticks(-7.93, 15.58, 5.0), 5);
+    assert_eq!(number_of_ticks(0.0, 15.0, 4.0), 4);
+    assert_eq!(number_of_ticks(0.0, 15.0, 5.0), 4);
+    assert_eq!(number_of_ticks(5.0, 21.0, 4.0), 4);
+    assert_eq!(number_of_ticks(5.0, 21.0, 5.0), 4);
+    assert_eq!(number_of_ticks(-8.0, 15.58, 4.0), 6);
+    assert_eq!(number_of_ticks(-8.0, 15.58, 5.0), 5);
+}
+
+/// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
 fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 {
     let range = max - min;
+    let min_tick_step = ((range / max_ticks as f64) + 1.0) as u32;
     if range > 1.0 {
-        let min_tick_step = range / max_ticks as f64;
-        let tick_step = TickSteps::start_at(min_tick_step as u32).next();
-        tick_step.expect("ERROR: We've somehow run out of tick step options!") as f64
+        // Get our generator of tick step sizes
+        let tick_steps = TickSteps::start_at(min_tick_step);
+        // Get the first entry which is our smallest possible tick step size
+        let smallest_valid_step = tick_steps.clone()
+            .next()
+            .expect("ERROR: We've somehow run out of tick step options!") as
+                                  f64;
+        // Count how many ticks that relates to
+        let actual_num_ticks = number_of_ticks(min, max, smallest_valid_step);
+        // Get all the possible tick step sizes that give just as many ticks
+        let step_options =
+            tick_steps.take_while(|&s| number_of_ticks(min, max, s as f64) == actual_num_ticks);
+        // Get the largest tick step size from the list
+        step_options.max().expect("ERROR: No tick options") as f64
     } else {
         // We are on some small range so will need to be careful to represent the ticks correctly
         0.1 // TODO Be just a tad cleverer than this...
@@ -115,93 +158,71 @@ fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 {
 
 #[test]
 fn test_calculate_tick_step_for_range() {
-    assert_eq!(calculate_tick_step_for_range(-7.93, 15.58, 6), 4.0);
+    assert_eq!(calculate_tick_step_for_range(0.0, 6.0, 6), 2.0);
+    assert_eq!(calculate_tick_step_for_range(0.0, 11.0, 6), 2.0);
+    assert_eq!(calculate_tick_step_for_range(0.0, 14.0, 6), 4.0);
+    assert_eq!(calculate_tick_step_for_range(0.0, 15.0, 6), 5.0);
+    assert_eq!(calculate_tick_step_for_range(-1.0, 5.0, 6), 2.0);
+    assert_eq!(calculate_tick_step_for_range(-7.93, 15.58, 6), 5.0);
 }
 
 /// Given a maximum frequency for the histogram, work out how many ticks to display on the y-axis
 fn calculate_tick_step_for_frequency(max: u32) -> u32 {
-    // We want to scale the BASE_STEPS by some power of 10
-    let base_step_scale = ((max / 3) as f64).log10() as u32;
-    let steps = Vec::from_iter(BASE_STEPS.iter().map(|s| s * 10u32.pow(base_step_scale)));
-
-    let default_step = 1;
-    *steps.iter().rev().find(|&try_step| max / try_step >= 3).unwrap_or(&default_step)
+    calculate_tick_step_for_range(0.0, max as f64, 6) as u32
 }
 
 /// Given a upper bound, calculate the sensible places to place the ticks
 fn calculate_ticks_frequency(max: u32) -> Vec<u32> {
     let tick_step = calculate_tick_step_for_frequency(max);
-    Vec::from_iter((0..max + 1).filter(|i| i % tick_step == 0))
-}
-
-#[test]
-fn test_calculate_tick_step() {
-    use std::collections::HashMap;
-    // For a given maximum count, check the step size
-    let mut steps = HashMap::new();
-    steps.insert(1..6, 1);
-    steps.insert(6..12, 2);
-    steps.insert(12..15, 4);
-    steps.insert(15..30, 5);
-    steps.insert(30..60, 10);
-    steps.insert(60..120, 20);
-    steps.insert(120..150, 40);
-    steps.insert(150..300, 50);
-    let steps = steps;
-
-    for (range, step) in steps {
-        for i in range {
-            assert_eq!(calculate_tick_step_for_frequency(i), step);
-        }
-    }
+    Vec::from_iter(generate_ticks(0.0, max as f64, tick_step as f64).iter().map(|&t| t as u32))
 }
 
 #[test]
 fn test_calculate_ticks() {
-    assert_eq!(calculate_ticks_frequency(1), [0, 1]); // step up in 1s
+    //assert_eq!(calculate_ticks_frequency(1), [0, 1]); // step up in 1s
     assert_eq!(calculate_ticks_frequency(2), [0, 1, 2]);
-    assert_eq!(calculate_ticks_frequency(3), [0, 1, 2, 3]); // step up in 1s
+    assert_eq!(calculate_ticks_frequency(3), [0, 1, 2, 3]);
     assert_eq!(calculate_ticks_frequency(4), [0, 1, 2, 3, 4]);
     assert_eq!(calculate_ticks_frequency(5), [0, 1, 2, 3, 4, 5]);
-    assert_eq!(calculate_ticks_frequency(6), [0, 2, 4, 6]); // step up in 2s
+    assert_eq!(calculate_ticks_frequency(6), [0, 2, 4, 6]);
     assert_eq!(calculate_ticks_frequency(7), [0, 2, 4, 6]);
     assert_eq!(calculate_ticks_frequency(8), [0, 2, 4, 6, 8]);
     assert_eq!(calculate_ticks_frequency(9), [0, 2, 4, 6, 8]);
     assert_eq!(calculate_ticks_frequency(10), [0, 2, 4, 6, 8, 10]);
     assert_eq!(calculate_ticks_frequency(11), [0, 2, 4, 6, 8, 10]);
-    assert_eq!(calculate_ticks_frequency(12), [0, 4, 8, 12]); // step up in 4s
+    assert_eq!(calculate_ticks_frequency(12), [0, 4, 8, 12]);
     assert_eq!(calculate_ticks_frequency(13), [0, 4, 8, 12]);
     assert_eq!(calculate_ticks_frequency(14), [0, 4, 8, 12]);
-    assert_eq!(calculate_ticks_frequency(15), [0, 5, 10, 15]); // step up in 5s
-    assert_eq!(calculate_ticks_frequency(16), [0, 5, 10, 15]);
-    assert_eq!(calculate_ticks_frequency(17), [0, 5, 10, 15]);
-    assert_eq!(calculate_ticks_frequency(18), [0, 5, 10, 15]);
-    assert_eq!(calculate_ticks_frequency(19), [0, 5, 10, 15]);
-    assert_eq!(calculate_ticks_frequency(20), [0, 5, 10, 15, 20]);
-    assert_eq!(calculate_ticks_frequency(21), [0, 5, 10, 15, 20]);
-    assert_eq!(calculate_ticks_frequency(22), [0, 5, 10, 15, 20]);
-    assert_eq!(calculate_ticks_frequency(23), [0, 5, 10, 15, 20]);
+    assert_eq!(calculate_ticks_frequency(15), [0, 5, 10, 15]);
+    assert_eq!(calculate_ticks_frequency(16), [0, 4, 8, 12, 16]);
+    assert_eq!(calculate_ticks_frequency(17), [0, 4, 8, 12, 16]);
+    assert_eq!(calculate_ticks_frequency(18), [0, 4, 8, 12, 16]);
+    assert_eq!(calculate_ticks_frequency(19), [0, 4, 8, 12, 16]);
+    assert_eq!(calculate_ticks_frequency(20), [0, 4, 8, 12, 16, 20]);
+    assert_eq!(calculate_ticks_frequency(21), [0, 4, 8, 12, 16, 20]);
+    assert_eq!(calculate_ticks_frequency(22), [0, 4, 8, 12, 16, 20]);
+    assert_eq!(calculate_ticks_frequency(23), [0, 4, 8, 12, 16, 20]);
     assert_eq!(calculate_ticks_frequency(24), [0, 5, 10, 15, 20]);
     assert_eq!(calculate_ticks_frequency(25), [0, 5, 10, 15, 20, 25]);
     assert_eq!(calculate_ticks_frequency(26), [0, 5, 10, 15, 20, 25]);
     assert_eq!(calculate_ticks_frequency(27), [0, 5, 10, 15, 20, 25]);
     assert_eq!(calculate_ticks_frequency(28), [0, 5, 10, 15, 20, 25]);
     assert_eq!(calculate_ticks_frequency(29), [0, 5, 10, 15, 20, 25]);
-    assert_eq!(calculate_ticks_frequency(30), [0, 10, 20, 30]); // step up in 10s
+    assert_eq!(calculate_ticks_frequency(30), [0, 10, 20, 30]);
     assert_eq!(calculate_ticks_frequency(31), [0, 10, 20, 30]);
     //...
     assert_eq!(calculate_ticks_frequency(40), [0, 10, 20, 30, 40]);
     assert_eq!(calculate_ticks_frequency(50), [0, 10, 20, 30, 40, 50]);
-    assert_eq!(calculate_ticks_frequency(60), [0, 20, 40, 60]); // step up in 20s
+    assert_eq!(calculate_ticks_frequency(60), [0, 20, 40, 60]);
     assert_eq!(calculate_ticks_frequency(70), [0, 20, 40, 60]);
     assert_eq!(calculate_ticks_frequency(80), [0, 20, 40, 60, 80]);
     assert_eq!(calculate_ticks_frequency(90), [0, 20, 40, 60, 80]);
     assert_eq!(calculate_ticks_frequency(100), [0, 20, 40, 60, 80, 100]);
     assert_eq!(calculate_ticks_frequency(110), [0, 20, 40, 60, 80, 100]);
-    assert_eq!(calculate_ticks_frequency(120), [0, 40, 80, 120]); // step up in 40s
+    assert_eq!(calculate_ticks_frequency(120), [0, 40, 80, 120]);
     assert_eq!(calculate_ticks_frequency(130), [0, 40, 80, 120]);
     assert_eq!(calculate_ticks_frequency(140), [0, 40, 80, 120]);
-    assert_eq!(calculate_ticks_frequency(150), [0, 50, 100, 150]); // step up in 50s
+    assert_eq!(calculate_ticks_frequency(150), [0, 50, 100, 150]);
     //...
     assert_eq!(calculate_ticks_frequency(3475), [0, 1000, 2000, 3000]);
 }
