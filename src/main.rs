@@ -45,7 +45,7 @@ fn hist() {
     let data = get_single_column();
 
     let h = histogram::Histogram::from_vec(&data);
-    
+
     render::draw_histogram(h);
 
     //println!("{:?}", h.bin_counts);
