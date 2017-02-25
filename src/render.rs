@@ -252,7 +252,7 @@ pub fn draw_histogram(h: histogram::Histogram) {
     let axis_strings = distribute_y_ticks(y_ticks, largest_bin_count, face_height);
 
     for line in 0..face_height {
-        let axis_label = axis_strings[(face_height - line - 1) as usize].to_string();
+        let axis_label = axis_strings[(face_height - line) as usize].to_string();
         let mut cols = String::new();
         for &bin_count in h.bin_counts.iter() {
             // between 0..1 how full the bin is compared to largest
@@ -273,7 +273,7 @@ pub fn draw_histogram(h: histogram::Histogram) {
                  label_width = longest_y_label_width);
     }
     println!("{:>label_width$} +{:-<plot_width$}",
-             " ",
+             axis_strings[0],
              "",
              label_width = longest_y_label_width,
              plot_width = face_width);
