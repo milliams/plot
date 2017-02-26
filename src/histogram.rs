@@ -26,6 +26,10 @@ impl Histogram {
 
         let bin_width = (max - min) / num_bins as f64; // width of bin in real units
 
+        // TODO this is no tthe best way as it will accumulate errors and not match the max
+        let bounds: Vec<f64> = Vec::from_iter((0..num_bins + 1)
+            .map(|n| n as f64 * bin_width + min));
+
         for &val in v.iter() {
             let bin = ((val - min) / bin_width) as usize;
             bins[bin] += 1;
@@ -33,7 +37,7 @@ impl Histogram {
         let density_per_bin = Vec::from_iter(bins.iter().map(|&x| x as f64 / bin_width));
 
         Histogram {
-            bin_bounds: vec![], // TODO
+            bin_bounds: bounds,
             bin_counts: bins,
             bin_densities: density_per_bin,
         }
