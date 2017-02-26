@@ -17,21 +17,30 @@ pub struct Histogram {
 impl Histogram {
     pub fn from_vec(v: &Vec<f64>) -> Histogram {
 
-        let max = v.iter().fold(-1. / 0., |a, &b| f64::max(a, b)) + 0.0000001; //TODO use next_after
+        let max = v.iter().fold(-1. / 0., |a, &b| f64::max(a, b));
         let min = v.iter().fold(1. / 0., |a, &b| f64::min(a, b));
 
         let num_bins = 30; // Number of bins
 
         let mut bins = vec![0; num_bins];
 
+        let range = max - min;
+
         let bin_width = (max - min) / num_bins as f64; // width of bin in real units
 
-        // TODO this is not the best way as it will accumulate errors and not match the max
-        let bounds: Vec<f64> = Vec::from_iter((0..num_bins + 1)
-            .map(|n| n as f64 * bin_width + min));
+        let mut bounds: Vec<f64> = Vec::from_iter((0..num_bins)
+            .map(|n| (n as f64 / num_bins as f64) * range + min));
+        bounds.push(max);
+        let bounds = bounds;
 
         for &val in v.iter() {
-            let bin = ((val - min) / bin_width) as usize;
+            let mut bin = ((val - min) / bin_width) as usize;
+            if bin == num_bins {
+                //We might be right on the top-most bound
+                if val == max {
+                    bin = num_bins - 1;
+                }
+            }
             bins[bin] += 1;
         }
         let density_per_bin = Vec::from_iter(bins.iter().map(|&x| x as f64 / bin_width));
