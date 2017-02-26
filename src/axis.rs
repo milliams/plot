@@ -92,18 +92,6 @@ fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
     }
 }
 
-/// Given a maximum frequency for the histogram and a maximum number of ticks,
-/// work out the step between ticks
-fn calculate_tick_step_for_frequency(max: u32, max_ticks: u32) -> u32 {
-    calculate_tick_step_for_range(0.0, max as f64, max_ticks) as u32
-}
-
-/// Given a upper bound, calculate the sensible places to place the ticks
-pub fn calculate_ticks_frequency(max: u32, max_ticks: u32) -> Vec<u32> {
-    let tick_step = calculate_tick_step_for_frequency(max, max_ticks);
-    Vec::from_iter(generate_ticks(0.0, max as f64, tick_step as f64).iter().map(|&t| t as u32))
-}
-
 /// Given ana xis range, calculate the sensible places to place the ticks
 pub fn calculate_ticks(min: f64, max: f64, max_ticks: u32) -> Vec<f64> {
     let tick_step = calculate_tick_step_for_range(min, max, max_ticks);
@@ -157,51 +145,66 @@ mod tests {
 
     #[test]
     fn test_calculate_ticks() {
-        //assert_eq!(calculate_ticks_frequency(1), [0, 1]); // step up in 1s
-        assert_eq!(calculate_ticks_frequency(2, 6), [0, 1, 2]);
-        assert_eq!(calculate_ticks_frequency(3, 6), [0, 1, 2, 3]);
-        assert_eq!(calculate_ticks_frequency(4, 6), [0, 1, 2, 3, 4]);
-        assert_eq!(calculate_ticks_frequency(5, 6), [0, 1, 2, 3, 4, 5]);
-        assert_eq!(calculate_ticks_frequency(6, 6), [0, 2, 4, 6]);
-        assert_eq!(calculate_ticks_frequency(7, 6), [0, 2, 4, 6]);
-        assert_eq!(calculate_ticks_frequency(8, 6), [0, 2, 4, 6, 8]);
-        assert_eq!(calculate_ticks_frequency(9, 6), [0, 2, 4, 6, 8]);
-        assert_eq!(calculate_ticks_frequency(10, 6), [0, 2, 4, 6, 8, 10]);
-        assert_eq!(calculate_ticks_frequency(11, 6), [0, 2, 4, 6, 8, 10]);
-        assert_eq!(calculate_ticks_frequency(12, 6), [0, 4, 8, 12]);
-        assert_eq!(calculate_ticks_frequency(13, 6), [0, 4, 8, 12]);
-        assert_eq!(calculate_ticks_frequency(14, 6), [0, 4, 8, 12]);
-        assert_eq!(calculate_ticks_frequency(15, 6), [0, 5, 10, 15]);
-        assert_eq!(calculate_ticks_frequency(16, 6), [0, 4, 8, 12, 16]);
-        assert_eq!(calculate_ticks_frequency(17, 6), [0, 4, 8, 12, 16]);
-        assert_eq!(calculate_ticks_frequency(18, 6), [0, 4, 8, 12, 16]);
-        assert_eq!(calculate_ticks_frequency(19, 6), [0, 4, 8, 12, 16]);
-        assert_eq!(calculate_ticks_frequency(20, 6), [0, 4, 8, 12, 16, 20]);
-        assert_eq!(calculate_ticks_frequency(21, 6), [0, 4, 8, 12, 16, 20]);
-        assert_eq!(calculate_ticks_frequency(22, 6), [0, 4, 8, 12, 16, 20]);
-        assert_eq!(calculate_ticks_frequency(23, 6), [0, 4, 8, 12, 16, 20]);
-        assert_eq!(calculate_ticks_frequency(24, 6), [0, 5, 10, 15, 20]);
-        assert_eq!(calculate_ticks_frequency(25, 6), [0, 5, 10, 15, 20, 25]);
-        assert_eq!(calculate_ticks_frequency(26, 6), [0, 5, 10, 15, 20, 25]);
-        assert_eq!(calculate_ticks_frequency(27, 6), [0, 5, 10, 15, 20, 25]);
-        assert_eq!(calculate_ticks_frequency(28, 6), [0, 5, 10, 15, 20, 25]);
-        assert_eq!(calculate_ticks_frequency(29, 6), [0, 5, 10, 15, 20, 25]);
-        assert_eq!(calculate_ticks_frequency(30, 6), [0, 10, 20, 30]);
-        assert_eq!(calculate_ticks_frequency(31, 6), [0, 10, 20, 30]);
+        //assert_eq!(calculate_ticks(1), [0, 1]); // step up in 1s
+        assert_eq!(calculate_ticks(0.0, 2.0, 6), [0.0, 1.0, 2.0]);
+        assert_eq!(calculate_ticks(0.0, 3.0, 6), [0.0, 1.0, 2.0, 3.0]);
+        assert_eq!(calculate_ticks(0.0, 4.0, 6), [0.0, 1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(calculate_ticks(0.0, 5.0, 6), [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(calculate_ticks(0.0, 6.0, 6), [0.0, 2.0, 4.0, 6.0]);
+        assert_eq!(calculate_ticks(0.0, 7.0, 6), [0.0, 2.0, 4.0, 6.0]);
+        assert_eq!(calculate_ticks(0.0, 8.0, 6), [0.0, 2.0, 4.0, 6.0, 8.0]);
+        assert_eq!(calculate_ticks(0.0, 9.0, 6), [0.0, 2.0, 4.0, 6.0, 8.0]);
+        assert_eq!(calculate_ticks(0.0, 10.0, 6),
+                   [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]);
+        assert_eq!(calculate_ticks(0.0, 11.0, 6),
+                   [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]);
+        assert_eq!(calculate_ticks(0.0, 12.0, 6), [0.0, 4.0, 8.0, 12.0]);
+        assert_eq!(calculate_ticks(0.0, 13.0, 6), [0.0, 4.0, 8.0, 12.0]);
+        assert_eq!(calculate_ticks(0.0, 14.0, 6), [0.0, 4.0, 8.0, 12.0]);
+        assert_eq!(calculate_ticks(0.0, 15.0, 6), [0.0, 5.0, 10.0, 15.0]);
+        assert_eq!(calculate_ticks(0.0, 16.0, 6), [0.0, 4.0, 8.0, 12.0, 16.0]);
+        assert_eq!(calculate_ticks(0.0, 17.0, 6), [0.0, 4.0, 8.0, 12.0, 16.0]);
+        assert_eq!(calculate_ticks(0.0, 18.0, 6), [0.0, 4.0, 8.0, 12.0, 16.0]);
+        assert_eq!(calculate_ticks(0.0, 19.0, 6), [0.0, 4.0, 8.0, 12.0, 16.0]);
+        assert_eq!(calculate_ticks(0.0, 20.0, 6),
+                   [0.0, 4.0, 8.0, 12.0, 16.0, 20.0]);
+        assert_eq!(calculate_ticks(0.0, 21.0, 6),
+                   [0.0, 4.0, 8.0, 12.0, 16.0, 20.0]);
+        assert_eq!(calculate_ticks(0.0, 22.0, 6),
+                   [0.0, 4.0, 8.0, 12.0, 16.0, 20.0]);
+        assert_eq!(calculate_ticks(0.0, 23.0, 6),
+                   [0.0, 4.0, 8.0, 12.0, 16.0, 20.0]);
+        assert_eq!(calculate_ticks(0.0, 24.0, 6), [0.0, 5.0, 10.0, 15.0, 20.0]);
+        assert_eq!(calculate_ticks(0.0, 25.0, 6),
+                   [0.0, 5.0, 10.0, 15.0, 20.0, 25.0]);
+        assert_eq!(calculate_ticks(0.0, 26.0, 6),
+                   [0.0, 5.0, 10.0, 15.0, 20.0, 25.0]);
+        assert_eq!(calculate_ticks(0.0, 27.0, 6),
+                   [0.0, 5.0, 10.0, 15.0, 20.0, 25.0]);
+        assert_eq!(calculate_ticks(0.0, 28.0, 6),
+                   [0.0, 5.0, 10.0, 15.0, 20.0, 25.0]);
+        assert_eq!(calculate_ticks(0.0, 29.0, 6),
+                   [0.0, 5.0, 10.0, 15.0, 20.0, 25.0]);
+        assert_eq!(calculate_ticks(0.0, 30.0, 6), [0.0, 10.0, 20.0, 30.0]);
+        assert_eq!(calculate_ticks(0.0, 31.0, 6), [0.0, 10.0, 20.0, 30.0]);
         //...
-        assert_eq!(calculate_ticks_frequency(40, 6), [0, 10, 20, 30, 40]);
-        assert_eq!(calculate_ticks_frequency(50, 6), [0, 10, 20, 30, 40, 50]);
-        assert_eq!(calculate_ticks_frequency(60, 6), [0, 20, 40, 60]);
-        assert_eq!(calculate_ticks_frequency(70, 6), [0, 20, 40, 60]);
-        assert_eq!(calculate_ticks_frequency(80, 6), [0, 20, 40, 60, 80]);
-        assert_eq!(calculate_ticks_frequency(90, 6), [0, 20, 40, 60, 80]);
-        assert_eq!(calculate_ticks_frequency(100, 6), [0, 20, 40, 60, 80, 100]);
-        assert_eq!(calculate_ticks_frequency(110, 6), [0, 20, 40, 60, 80, 100]);
-        assert_eq!(calculate_ticks_frequency(120, 6), [0, 40, 80, 120]);
-        assert_eq!(calculate_ticks_frequency(130, 6), [0, 40, 80, 120]);
-        assert_eq!(calculate_ticks_frequency(140, 6), [0, 40, 80, 120]);
-        assert_eq!(calculate_ticks_frequency(150, 6), [0, 50, 100, 150]);
+        assert_eq!(calculate_ticks(0.0, 40.0, 6), [0.0, 10.0, 20.0, 30.0, 40.0]);
+        assert_eq!(calculate_ticks(0.0, 50.0, 6),
+                   [0.0, 10.0, 20.0, 30.0, 40.0, 50.0]);
+        assert_eq!(calculate_ticks(0.0, 60.0, 6), [0.0, 20.0, 40.0, 60.0]);
+        assert_eq!(calculate_ticks(0.0, 70.0, 6), [0.0, 20.0, 40.0, 60.0]);
+        assert_eq!(calculate_ticks(0.0, 80.0, 6), [0.0, 20.0, 40.0, 60.0, 80.0]);
+        assert_eq!(calculate_ticks(0.0, 90.0, 6), [0.0, 20.0, 40.0, 60.0, 80.0]);
+        assert_eq!(calculate_ticks(0.0, 100.0, 6),
+                   [0.0, 20.0, 40.0, 60.0, 80.0, 100.0]);
+        assert_eq!(calculate_ticks(0.0, 110.0, 6),
+                   [0.0, 20.0, 40.0, 60.0, 80.0, 100.0]);
+        assert_eq!(calculate_ticks(0.0, 120.0, 6), [0.0, 40.0, 80.0, 120.0]);
+        assert_eq!(calculate_ticks(0.0, 130.0, 6), [0.0, 40.0, 80.0, 120.0]);
+        assert_eq!(calculate_ticks(0.0, 140.0, 6), [0.0, 40.0, 80.0, 120.0]);
+        assert_eq!(calculate_ticks(0.0, 150.0, 6), [0.0, 50.0, 100.0, 150.0]);
         //...
-        assert_eq!(calculate_ticks_frequency(3475, 6), [0, 1000, 2000, 3000]);
+        assert_eq!(calculate_ticks(0.0, 3475.0, 6),
+                   [0.0, 1000.0, 2000.0, 3000.0]);
     }
 }

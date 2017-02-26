@@ -15,23 +15,6 @@ fn value_to_axis_cell_offset(value: f64, min: f64, max: f64, face_cells: u32) ->
 
 /// Given a list of ticks to display,
 /// the total scale of the axis
-/// and the number of lines to work with,
-/// produce the label for each line of the axis
-pub fn distribute_y_ticks(ticks: Vec<u32>, max: f64, face_lines: u32) -> Vec<String> {
-    let m = tick_offset_map(&Vec::from_iter(ticks.iter().map(|&x| x as f64)),
-                            0.0,
-                            max,
-                            face_lines);
-    let p = (0..face_lines + 1).map(|line| if m.contains_key(&line) {
-        m[&line].to_string()
-    } else {
-        "".to_string()
-    });
-    Vec::from_iter(p)
-}
-
-/// Given a list of ticks to display,
-/// the total scale of the axis
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to tick value
 pub fn tick_offset_map(ticks: &Vec<f64>, min: f64, max: f64, face_width: u32) -> HashMap<u32, f64> {
@@ -68,8 +51,8 @@ impl XAxisLabel {
     }
 }
 
-fn create_x_axis_labels(tick_map: &HashMap<u32, f64>) -> Vec<XAxisLabel> {
-    let mut ls = Vec::from_iter(tick_map.iter().map(|(&offset, &tick)| {
+fn create_x_axis_labels(x_tick_map: &HashMap<u32, f64>) -> Vec<XAxisLabel> {
+    let mut ls = Vec::from_iter(x_tick_map.iter().map(|(&offset, &tick)| {
         XAxisLabel {
             text: tick.to_string(),
             offset: offset,
@@ -88,26 +71,23 @@ pub fn draw_histogram(h: histogram::Histogram) {
 
     let largest_bin_count = *h.bin_counts.iter().max().expect("ERROR: There are no bins");
 
-    let y_ticks = axis::calculate_ticks_frequency(largest_bin_count, max_y_ticks);
+    let y_ticks = axis::calculate_ticks(0.0, largest_bin_count as f64, max_y_ticks);
+    let y_tick_map = tick_offset_map(&y_ticks, 0.0, largest_bin_count as f64, face_height as u32);
 
     let longest_y_label_width = y_ticks.iter()
         .map(|n| n.to_string().len())
         .max()
         .expect("ERROR: There are no y-axis ticks");
 
-    let y_axis_strings = distribute_y_ticks(y_ticks, largest_bin_count as f64, face_height);
-
     let min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
     let max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
     let x_ticks = axis::calculate_ticks(min, max, max_x_ticks);
-    let tick_map = tick_offset_map(&x_ticks, min, max, face_width as u32);
-    let mut keys = Vec::from_iter(tick_map.keys());
-    keys.sort();
+    let x_tick_map = tick_offset_map(&x_ticks, min, max, face_width as u32);
 
     let mut tick_marks = "".to_string();
     for cell in 0..face_width + 1 {
         let cell = cell as u32;
-        let ch = if tick_map.get(&cell).is_some() {
+        let ch = if x_tick_map.get(&cell).is_some() {
             '|'
         } else {
             ' '
@@ -115,7 +95,7 @@ pub fn draw_histogram(h: histogram::Histogram) {
         tick_marks.push(ch);
     }
 
-    let x_labels = create_x_axis_labels(&tick_map);
+    let x_labels = create_x_axis_labels(&x_tick_map);
     let start_offset = x_labels.iter()
         .map(|label| label.start_offset())
         .min()
@@ -140,7 +120,10 @@ pub fn draw_histogram(h: histogram::Histogram) {
     }
 
     for line in 0..face_height {
-        let axis_label = y_axis_strings[(face_height - line) as usize].to_string();
+        let axis_label = match y_tick_map.get(&(face_height - line)) {
+            Some(v) => v.to_string(),
+            None => "".to_string(),
+        };
         let mut cols = String::new();
         for &bin_count in h.bin_counts.iter() {
             // between 0..1 how full the bin is compared to largest
@@ -161,7 +144,7 @@ pub fn draw_histogram(h: histogram::Histogram) {
                  label_width = longest_y_label_width);
     }
     println!("{:>label_width$} +{:-<plot_width$}",
-             y_axis_strings[0],
+             "0",
              "",
              label_width = longest_y_label_width,
              plot_width = face_width);
@@ -182,21 +165,6 @@ pub fn draw_histogram(h: histogram::Histogram) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_distribute_y_ticks() {
-        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5.0, 5),
-                   ["0", "1", "2", "3", "4", "5"]);
-
-        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 7),
-                   ["0", "1", "2", "", "3", "4", "5", ""]);
-        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 8),
-                   ["0", "1", "", "2", "3", "4", "", "5", ""]);
-        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 9),
-                   ["0", "", "1", "2", "", "3", "4", "", "5", ""]);
-        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 10),
-                   ["0", "", "1", "2", "", "3", "", "4", "5", "", ""]);
-    }
 
     #[test]
     fn test_x_axis_label() {

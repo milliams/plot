@@ -42,7 +42,8 @@ fn get_single_column() -> Vec<f64> {
             Ok(line) => line,
             Err(err) => panic!("IO error: {}", err),
         };
-        data.push(line_text.parse::<f64>().expect(&format!("ERROR: Could not parse '{}' as an f64", line_text)));
+        data.push(line_text.parse::<f64>()
+            .expect(&format!("ERROR: Could not parse '{}' as an f64", line_text)));
     }
     return data;
 }
@@ -65,7 +66,8 @@ fn average() {
             Err(err) => panic!("IO error: {}", err),
         };
         length += 1;
-        total += line_text.parse::<f64>().expect(&format!("ERROR: Could not parse '{}' as an f64", line_text));
+        total += line_text.parse::<f64>()
+            .expect(&format!("ERROR: Could not parse '{}' as an f64", line_text));
     }
 
     println!("{}", total / length as f64);
