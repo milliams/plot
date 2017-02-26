@@ -33,35 +33,35 @@ impl Axis {
 
 /// The base units for the step sizes
 /// They should be within one order of magnitude, e.g. [1,10)
-const BASE_STEPS: [u32; 4] = [1, 2, 4, 5];
+const BASE_STEPS: [u64; 4] = [1, 2, 4, 5];
 
 #[derive(Debug,Clone)]
 struct TickSteps {
-    next: u32,
+    next: u64,
 }
 
 impl TickSteps {
-    fn start_at(start: u32) -> TickSteps {
+    fn start_at(start: u64) -> TickSteps {
         let start_options = TickSteps::scaled_steps(&start);
-        let overflow: u32 = start_options[0] * 10;
+        let overflow = start_options[0] * 10;
         let curr = start_options.iter().skip_while(|&step| step < &start).next();
 
         TickSteps { next: *curr.unwrap_or(&overflow) }
     }
 
-    fn scaled_steps(curr: &u32) -> Vec<u32> {
-        let base_step_scale = 10u32.pow((*curr as f64).log10() as u32);
+    fn scaled_steps(curr: &u64) -> Vec<u64> {
+        let base_step_scale = 10u64.pow((*curr as f64).log10() as u32);
         Vec::from_iter(BASE_STEPS.iter().map(|s| s * base_step_scale))
     }
 }
 
 impl Iterator for TickSteps {
-    type Item = u32;
+    type Item = u64;
 
-    fn next(&mut self) -> Option<u32> {
+    fn next(&mut self) -> Option<u64> {
         let curr = self.next; // cache the value we're currently on
         let curr_steps = TickSteps::scaled_steps(&self.next);
-        let overflow: u32 = curr_steps[0] * 10;
+        let overflow: u64 = curr_steps[0] * 10;
         self.next = *curr_steps.iter().skip_while(|&s| s <= &curr).next().unwrap_or(&overflow);
         Some(curr)
     }
@@ -101,7 +101,7 @@ fn number_of_ticks(min: f64, max: f64, step_size: f64) -> u32 {
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
 fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
     let range = max - min;
-    let min_tick_step = ((range / max_ticks as f64) + 1.0) as u32;
+    let min_tick_step = ((range / max_ticks as f64) + 1.0) as u64;
     if range > 1.0 {
         // Get our generator of tick step sizes
         let tick_steps = TickSteps::start_at(min_tick_step);
