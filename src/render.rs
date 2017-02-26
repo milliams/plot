@@ -204,18 +204,18 @@ fn test_calculate_ticks() {
 // calculate how far from the x-axis it should be plotted
 fn value_to_axis_cell_offset(value: f64, min: f64, max: f64, face_cells: u32) -> u32 {
     let data_per_cell = (max - min) / face_cells as f64;
-    (value / data_per_cell).round() as u32
+    ((value - min) / data_per_cell).round() as u32
 }
 
 /// Given a list of ticks to display,
 /// the total scale of the axis
 /// and the number of lines to work with,
 /// produce the label for each line of the axis
-pub fn distribute_y_ticks(ticks: Vec<u32>, max: u32, face_lines: u32) -> Vec<String> {
-    // map of distance from x-axis to tick value
-    let m: HashMap<_, _> = ticks.iter()
-        .map(|&tick| (value_to_axis_cell_offset(tick as f64, 0.0, max as f64, face_lines), tick))
-        .collect();
+pub fn distribute_y_ticks(ticks: Vec<u32>, max: f64, face_lines: u32) -> Vec<String> {
+    let m = tick_offset_map(&Vec::from_iter(ticks.iter().map(|&x| x as f64)),
+                            0.0,
+                            max,
+                            face_lines);
     let p = (0..face_lines + 1).map(|line| if m.contains_key(&line) {
         m[&line].to_string()
     } else {
@@ -225,18 +225,28 @@ pub fn distribute_y_ticks(ticks: Vec<u32>, max: u32, face_lines: u32) -> Vec<Str
 }
 
 #[test]
-fn test_distribute_ticks() {
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5, 5),
+fn test_distribute_y_ticks() {
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5.0, 5),
                ["0", "1", "2", "3", "4", "5"]);
 
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 7),
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 7),
                ["0", "1", "2", "", "3", "4", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 8),
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 8),
                ["0", "1", "", "2", "3", "4", "", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 9),
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 9),
                ["0", "", "1", "2", "", "3", "4", "", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6, 10),
+    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 10),
                ["0", "", "1", "2", "", "3", "", "4", "5", "", ""]);
+}
+
+/// Given a list of ticks to display,
+/// the total scale of the axis
+/// and the number of face cells to work with,
+/// create a mapping of cell offset to tick value
+pub fn tick_offset_map(ticks: &Vec<f64>, min: f64, max: f64, face_width: u32) -> HashMap<u32, f64> {
+    ticks.iter()
+        .map(|&tick| (value_to_axis_cell_offset(tick, min, max, face_width), tick))
+        .collect()
 }
 
 pub fn draw_histogram(h: histogram::Histogram) {
@@ -244,14 +254,18 @@ pub fn draw_histogram(h: histogram::Histogram) {
     let face_width = h.num_bins() * 3;
     let face_height = 30;
     let max_y_ticks = 6;
+    let max_x_ticks = 6;
 
-    let largest_bin_count = *h.bin_counts.iter().max().unwrap();
+    let largest_bin_count = *h.bin_counts.iter().max().expect("ERROR: There are no bins");
 
     let y_ticks = calculate_ticks_frequency(largest_bin_count, max_y_ticks);
 
-    let longest_y_label_width = y_ticks.iter().map(|n| n.to_string().len()).max().unwrap();
+    let longest_y_label_width = y_ticks.iter()
+        .map(|n| n.to_string().len())
+        .max()
+        .expect("ERROR: There are no y-axis ticks");
 
-    let y_axis_strings = distribute_y_ticks(y_ticks, largest_bin_count, face_height);
+    let y_axis_strings = distribute_y_ticks(y_ticks, largest_bin_count as f64, face_height);
 
     for line in 0..face_height {
         let axis_label = y_axis_strings[(face_height - line) as usize].to_string();
@@ -279,4 +293,28 @@ pub fn draw_histogram(h: histogram::Histogram) {
              "",
              label_width = longest_y_label_width,
              plot_width = face_width);
+
+    let min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
+    let max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
+    let x_tick_step = calculate_tick_step_for_range(min, max, max_x_ticks);
+    let x_ticks = generate_ticks(min, max, x_tick_step);
+    let tick_map = tick_offset_map(&x_ticks, min, max, face_width as u32);
+    let mut keys = Vec::from_iter(tick_map.keys());
+    keys.sort();
+
+    let mut tick_marks = "".to_string();
+    for cell in 0..face_width + 1 {
+        let cell = cell as u32;
+        let ch = if tick_map.get(&cell).is_some() {
+            '|'
+        } else {
+            ' '
+        };
+        tick_marks.push(ch);
+    }
+    println!("{:>label_width$} {:-<plot_width$}",
+             "",
+             tick_marks,
+             label_width = longest_y_label_width,
+             plot_width = face_width + 1);
 }
