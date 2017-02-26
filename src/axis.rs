@@ -36,7 +36,7 @@ impl Iterator for TickSteps {
     }
 }
 
-pub fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
+fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
     let mut ticks: Vec<f64> = vec![];
     if min <= 0.0 {
         if max >= 0.0 {
@@ -68,7 +68,7 @@ fn number_of_ticks(min: f64, max: f64, step_size: f64) -> u32 {
 }
 
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
-pub fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
+fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
     let range = max - min;
     let min_tick_step = ((range / max_ticks as f64) + 1.0) as u32;
     if range > 1.0 {
@@ -102,6 +102,12 @@ fn calculate_tick_step_for_frequency(max: u32, max_ticks: u32) -> u32 {
 pub fn calculate_ticks_frequency(max: u32, max_ticks: u32) -> Vec<u32> {
     let tick_step = calculate_tick_step_for_frequency(max, max_ticks);
     Vec::from_iter(generate_ticks(0.0, max as f64, tick_step as f64).iter().map(|&t| t as u32))
+}
+
+/// Given ana xis range, calculate the sensible places to place the ticks
+pub fn calculate_ticks(min: f64, max: f64, max_ticks: u32) -> Vec<f64> {
+    let tick_step = calculate_tick_step_for_range(min, max, max_ticks);
+    generate_ticks(min, max, tick_step)
 }
 
 #[cfg(test)]

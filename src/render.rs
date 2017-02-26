@@ -99,8 +99,7 @@ pub fn draw_histogram(h: histogram::Histogram) {
 
     let min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
     let max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
-    let x_tick_step = axis::calculate_tick_step_for_range(min, max, max_x_ticks);
-    let x_ticks = axis::generate_ticks(min, max, x_tick_step);
+    let x_ticks = axis::calculate_ticks(min, max, max_x_ticks);
     let tick_map = tick_offset_map(&x_ticks, min, max, face_width as u32);
     let mut keys = Vec::from_iter(tick_map.keys());
     keys.sort();
