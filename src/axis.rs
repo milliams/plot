@@ -58,7 +58,7 @@ fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
             .skip_while(|&v| v < min)
             .take_while(|&v| v <= max));
     }
-    ticks.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    ticks.sort_by(|a, b| a.partial_cmp(b).expect("ERROR: Invalid tick value found"));
     ticks
 }
 
