@@ -102,7 +102,7 @@ fn number_of_ticks(min: f64, max: f64, step_size: f64) -> usize {
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
 fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: usize) -> f64 {
     let range = max - min;
-    let min_tick_step = (range / max_ticks as f64);
+    let min_tick_step = range / max_ticks as f64;
     // Get the first entry which is our smallest possible tick step size
     let smallest_valid_step = TickSteps::start_at(min_tick_step)
         .skip_while(|&s| number_of_ticks(min, max, s) > max_ticks)
