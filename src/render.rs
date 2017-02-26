@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use std::fmt;
 
 use histogram;
 
@@ -42,25 +41,6 @@ impl Iterator for TickSteps {
     }
 }
 
-#[test]
-fn test_tick_step_generator() {
-    let t = TickSteps::start_at(1);
-    let ts = Vec::from_iter(t.take(7));
-    assert_eq!(ts, [1, 2, 4, 5, 10, 20, 40]);
-
-    let t = TickSteps::start_at(100);
-    let ts = Vec::from_iter(t.take(5));
-    assert_eq!(ts, [100, 200, 400, 500, 1000]);
-
-    let t = TickSteps::start_at(3);
-    let ts = Vec::from_iter(t.take(5));
-    assert_eq!(ts, [4, 5, 10, 20, 40]);
-
-    let t = TickSteps::start_at(8);
-    let ts = Vec::from_iter(t.take(3));
-    assert_eq!(ts, [10, 20, 40]);
-}
-
 fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
     let mut ticks: Vec<f64> = vec![];
     if min <= 0.0 {
@@ -92,18 +72,6 @@ fn number_of_ticks(min: f64, max: f64, step_size: f64) -> u32 {
     generate_ticks(min, max, step_size).len() as u32
 }
 
-#[test]
-fn test_number_of_ticks() {
-    assert_eq!(number_of_ticks(-7.93, 15.58, 4.0), 5);
-    assert_eq!(number_of_ticks(-7.93, 15.58, 5.0), 5);
-    assert_eq!(number_of_ticks(0.0, 15.0, 4.0), 4);
-    assert_eq!(number_of_ticks(0.0, 15.0, 5.0), 4);
-    assert_eq!(number_of_ticks(5.0, 21.0, 4.0), 4);
-    assert_eq!(number_of_ticks(5.0, 21.0, 5.0), 4);
-    assert_eq!(number_of_ticks(-8.0, 15.58, 4.0), 6);
-    assert_eq!(number_of_ticks(-8.0, 15.58, 5.0), 5);
-}
-
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
 fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 {
     let range = max - min;
@@ -129,16 +97,6 @@ fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 {
     }
 }
 
-#[test]
-fn test_calculate_tick_step_for_range() {
-    assert_eq!(calculate_tick_step_for_range(0.0, 6.0, 6), 2.0);
-    assert_eq!(calculate_tick_step_for_range(0.0, 11.0, 6), 2.0);
-    assert_eq!(calculate_tick_step_for_range(0.0, 14.0, 6), 4.0);
-    assert_eq!(calculate_tick_step_for_range(0.0, 15.0, 6), 5.0);
-    assert_eq!(calculate_tick_step_for_range(-1.0, 5.0, 6), 2.0);
-    assert_eq!(calculate_tick_step_for_range(-7.93, 15.58, 6), 5.0);
-}
-
 /// Given a maximum frequency for the histogram and a maximum number of ticks,
 /// work out the step between ticks
 fn calculate_tick_step_for_frequency(max: u32, max_ticks: i32) -> u32 {
@@ -149,56 +107,6 @@ fn calculate_tick_step_for_frequency(max: u32, max_ticks: i32) -> u32 {
 fn calculate_ticks_frequency(max: u32, max_ticks: i32) -> Vec<u32> {
     let tick_step = calculate_tick_step_for_frequency(max, max_ticks);
     Vec::from_iter(generate_ticks(0.0, max as f64, tick_step as f64).iter().map(|&t| t as u32))
-}
-
-#[test]
-fn test_calculate_ticks() {
-    //assert_eq!(calculate_ticks_frequency(1), [0, 1]); // step up in 1s
-    assert_eq!(calculate_ticks_frequency(2, 6), [0, 1, 2]);
-    assert_eq!(calculate_ticks_frequency(3, 6), [0, 1, 2, 3]);
-    assert_eq!(calculate_ticks_frequency(4, 6), [0, 1, 2, 3, 4]);
-    assert_eq!(calculate_ticks_frequency(5, 6), [0, 1, 2, 3, 4, 5]);
-    assert_eq!(calculate_ticks_frequency(6, 6), [0, 2, 4, 6]);
-    assert_eq!(calculate_ticks_frequency(7, 6), [0, 2, 4, 6]);
-    assert_eq!(calculate_ticks_frequency(8, 6), [0, 2, 4, 6, 8]);
-    assert_eq!(calculate_ticks_frequency(9, 6), [0, 2, 4, 6, 8]);
-    assert_eq!(calculate_ticks_frequency(10, 6), [0, 2, 4, 6, 8, 10]);
-    assert_eq!(calculate_ticks_frequency(11, 6), [0, 2, 4, 6, 8, 10]);
-    assert_eq!(calculate_ticks_frequency(12, 6), [0, 4, 8, 12]);
-    assert_eq!(calculate_ticks_frequency(13, 6), [0, 4, 8, 12]);
-    assert_eq!(calculate_ticks_frequency(14, 6), [0, 4, 8, 12]);
-    assert_eq!(calculate_ticks_frequency(15, 6), [0, 5, 10, 15]);
-    assert_eq!(calculate_ticks_frequency(16, 6), [0, 4, 8, 12, 16]);
-    assert_eq!(calculate_ticks_frequency(17, 6), [0, 4, 8, 12, 16]);
-    assert_eq!(calculate_ticks_frequency(18, 6), [0, 4, 8, 12, 16]);
-    assert_eq!(calculate_ticks_frequency(19, 6), [0, 4, 8, 12, 16]);
-    assert_eq!(calculate_ticks_frequency(20, 6), [0, 4, 8, 12, 16, 20]);
-    assert_eq!(calculate_ticks_frequency(21, 6), [0, 4, 8, 12, 16, 20]);
-    assert_eq!(calculate_ticks_frequency(22, 6), [0, 4, 8, 12, 16, 20]);
-    assert_eq!(calculate_ticks_frequency(23, 6), [0, 4, 8, 12, 16, 20]);
-    assert_eq!(calculate_ticks_frequency(24, 6), [0, 5, 10, 15, 20]);
-    assert_eq!(calculate_ticks_frequency(25, 6), [0, 5, 10, 15, 20, 25]);
-    assert_eq!(calculate_ticks_frequency(26, 6), [0, 5, 10, 15, 20, 25]);
-    assert_eq!(calculate_ticks_frequency(27, 6), [0, 5, 10, 15, 20, 25]);
-    assert_eq!(calculate_ticks_frequency(28, 6), [0, 5, 10, 15, 20, 25]);
-    assert_eq!(calculate_ticks_frequency(29, 6), [0, 5, 10, 15, 20, 25]);
-    assert_eq!(calculate_ticks_frequency(30, 6), [0, 10, 20, 30]);
-    assert_eq!(calculate_ticks_frequency(31, 6), [0, 10, 20, 30]);
-    //...
-    assert_eq!(calculate_ticks_frequency(40, 6), [0, 10, 20, 30, 40]);
-    assert_eq!(calculate_ticks_frequency(50, 6), [0, 10, 20, 30, 40, 50]);
-    assert_eq!(calculate_ticks_frequency(60, 6), [0, 20, 40, 60]);
-    assert_eq!(calculate_ticks_frequency(70, 6), [0, 20, 40, 60]);
-    assert_eq!(calculate_ticks_frequency(80, 6), [0, 20, 40, 60, 80]);
-    assert_eq!(calculate_ticks_frequency(90, 6), [0, 20, 40, 60, 80]);
-    assert_eq!(calculate_ticks_frequency(100, 6), [0, 20, 40, 60, 80, 100]);
-    assert_eq!(calculate_ticks_frequency(110, 6), [0, 20, 40, 60, 80, 100]);
-    assert_eq!(calculate_ticks_frequency(120, 6), [0, 40, 80, 120]);
-    assert_eq!(calculate_ticks_frequency(130, 6), [0, 40, 80, 120]);
-    assert_eq!(calculate_ticks_frequency(140, 6), [0, 40, 80, 120]);
-    assert_eq!(calculate_ticks_frequency(150, 6), [0, 50, 100, 150]);
-    //...
-    assert_eq!(calculate_ticks_frequency(3475, 6), [0, 1000, 2000, 3000]);
 }
 
 // Given a value like a tick label or a bin count,
@@ -223,21 +131,6 @@ pub fn distribute_y_ticks(ticks: Vec<u32>, max: f64, face_lines: u32) -> Vec<Str
         "".to_string()
     });
     Vec::from_iter(p)
-}
-
-#[test]
-fn test_distribute_y_ticks() {
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5.0, 5),
-               ["0", "1", "2", "3", "4", "5"]);
-
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 7),
-               ["0", "1", "2", "", "3", "4", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 8),
-               ["0", "1", "", "2", "3", "4", "", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 9),
-               ["0", "", "1", "2", "", "3", "4", "", "5", ""]);
-    assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 10),
-               ["0", "", "1", "2", "", "3", "", "4", "5", "", ""]);
 }
 
 /// Given a list of ticks to display,
@@ -276,41 +169,6 @@ impl XAxisLabel {
     fn start_offset(&self) -> i32 {
         self.offset as i32 - self.footprint() as i32 / 2
     }
-}
-
-#[test]
-fn test_x_axis_label() {
-    let l = XAxisLabel {
-        text: "3".to_string(),
-        offset: 2,
-    };
-    assert_eq!(l.len(), 1);
-    assert!(l.footprint() % 2 != 0);
-    assert_eq!(l.start_offset(), 2);
-
-    let l = XAxisLabel {
-        text: "34".to_string(),
-        offset: 2,
-    };
-    assert_eq!(l.len(), 2);
-    assert!(l.footprint() % 2 != 0);
-    assert_eq!(l.start_offset(), 1);
-
-    let l = XAxisLabel {
-        text: "345".to_string(),
-        offset: 2,
-    };
-    assert_eq!(l.len(), 3);
-    assert!(l.footprint() % 2 != 0);
-    assert_eq!(l.start_offset(), 1);
-
-    let l = XAxisLabel {
-        text: "3454".to_string(),
-        offset: 1,
-    };
-    assert_eq!(l.len(), 4);
-    assert!(l.footprint() % 2 != 0);
-    assert_eq!(l.start_offset(), -1);
 }
 
 fn create_x_axis_labels(tick_map: &HashMap<u32, f64>) -> Vec<XAxisLabel> {
@@ -373,11 +231,11 @@ pub fn draw_histogram(h: histogram::Histogram) {
     for label in (&x_labels).iter() {
         let spaces_to_append = label.start_offset() - start_offset - tick_label_string.len() as i32;
         if spaces_to_append.is_positive() {
-            for i in 0..spaces_to_append {
+            for _ in 0..spaces_to_append {
                 tick_label_string.push(' ');
             }
         } else {
-            for i in 0..spaces_to_append.wrapping_neg() {
+            for _ in 0..spaces_to_append.wrapping_neg() {
                 tick_label_string.pop();
             }
         }
@@ -423,4 +281,150 @@ pub fn draw_histogram(h: histogram::Histogram) {
              tick_label_string,
              label_width = (longest_y_label_width as i32 + start_offset) as usize,
              plot_width = (face_width as i32 + 1 + start_offset) as usize);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tick_step_generator() {
+        let t = TickSteps::start_at(1);
+        let ts = Vec::from_iter(t.take(7));
+        assert_eq!(ts, [1, 2, 4, 5, 10, 20, 40]);
+
+        let t = TickSteps::start_at(100);
+        let ts = Vec::from_iter(t.take(5));
+        assert_eq!(ts, [100, 200, 400, 500, 1000]);
+
+        let t = TickSteps::start_at(3);
+        let ts = Vec::from_iter(t.take(5));
+        assert_eq!(ts, [4, 5, 10, 20, 40]);
+
+        let t = TickSteps::start_at(8);
+        let ts = Vec::from_iter(t.take(3));
+        assert_eq!(ts, [10, 20, 40]);
+    }
+
+    #[test]
+    fn test_number_of_ticks() {
+        assert_eq!(number_of_ticks(-7.93, 15.58, 4.0), 5);
+        assert_eq!(number_of_ticks(-7.93, 15.58, 5.0), 5);
+        assert_eq!(number_of_ticks(0.0, 15.0, 4.0), 4);
+        assert_eq!(number_of_ticks(0.0, 15.0, 5.0), 4);
+        assert_eq!(number_of_ticks(5.0, 21.0, 4.0), 4);
+        assert_eq!(number_of_ticks(5.0, 21.0, 5.0), 4);
+        assert_eq!(number_of_ticks(-8.0, 15.58, 4.0), 6);
+        assert_eq!(number_of_ticks(-8.0, 15.58, 5.0), 5);
+    }
+
+    #[test]
+    fn test_calculate_tick_step_for_range() {
+        assert_eq!(calculate_tick_step_for_range(0.0, 6.0, 6), 2.0);
+        assert_eq!(calculate_tick_step_for_range(0.0, 11.0, 6), 2.0);
+        assert_eq!(calculate_tick_step_for_range(0.0, 14.0, 6), 4.0);
+        assert_eq!(calculate_tick_step_for_range(0.0, 15.0, 6), 5.0);
+        assert_eq!(calculate_tick_step_for_range(-1.0, 5.0, 6), 2.0);
+        assert_eq!(calculate_tick_step_for_range(-7.93, 15.58, 6), 5.0);
+    }
+
+    #[test]
+    fn test_calculate_ticks() {
+        //assert_eq!(calculate_ticks_frequency(1), [0, 1]); // step up in 1s
+        assert_eq!(calculate_ticks_frequency(2, 6), [0, 1, 2]);
+        assert_eq!(calculate_ticks_frequency(3, 6), [0, 1, 2, 3]);
+        assert_eq!(calculate_ticks_frequency(4, 6), [0, 1, 2, 3, 4]);
+        assert_eq!(calculate_ticks_frequency(5, 6), [0, 1, 2, 3, 4, 5]);
+        assert_eq!(calculate_ticks_frequency(6, 6), [0, 2, 4, 6]);
+        assert_eq!(calculate_ticks_frequency(7, 6), [0, 2, 4, 6]);
+        assert_eq!(calculate_ticks_frequency(8, 6), [0, 2, 4, 6, 8]);
+        assert_eq!(calculate_ticks_frequency(9, 6), [0, 2, 4, 6, 8]);
+        assert_eq!(calculate_ticks_frequency(10, 6), [0, 2, 4, 6, 8, 10]);
+        assert_eq!(calculate_ticks_frequency(11, 6), [0, 2, 4, 6, 8, 10]);
+        assert_eq!(calculate_ticks_frequency(12, 6), [0, 4, 8, 12]);
+        assert_eq!(calculate_ticks_frequency(13, 6), [0, 4, 8, 12]);
+        assert_eq!(calculate_ticks_frequency(14, 6), [0, 4, 8, 12]);
+        assert_eq!(calculate_ticks_frequency(15, 6), [0, 5, 10, 15]);
+        assert_eq!(calculate_ticks_frequency(16, 6), [0, 4, 8, 12, 16]);
+        assert_eq!(calculate_ticks_frequency(17, 6), [0, 4, 8, 12, 16]);
+        assert_eq!(calculate_ticks_frequency(18, 6), [0, 4, 8, 12, 16]);
+        assert_eq!(calculate_ticks_frequency(19, 6), [0, 4, 8, 12, 16]);
+        assert_eq!(calculate_ticks_frequency(20, 6), [0, 4, 8, 12, 16, 20]);
+        assert_eq!(calculate_ticks_frequency(21, 6), [0, 4, 8, 12, 16, 20]);
+        assert_eq!(calculate_ticks_frequency(22, 6), [0, 4, 8, 12, 16, 20]);
+        assert_eq!(calculate_ticks_frequency(23, 6), [0, 4, 8, 12, 16, 20]);
+        assert_eq!(calculate_ticks_frequency(24, 6), [0, 5, 10, 15, 20]);
+        assert_eq!(calculate_ticks_frequency(25, 6), [0, 5, 10, 15, 20, 25]);
+        assert_eq!(calculate_ticks_frequency(26, 6), [0, 5, 10, 15, 20, 25]);
+        assert_eq!(calculate_ticks_frequency(27, 6), [0, 5, 10, 15, 20, 25]);
+        assert_eq!(calculate_ticks_frequency(28, 6), [0, 5, 10, 15, 20, 25]);
+        assert_eq!(calculate_ticks_frequency(29, 6), [0, 5, 10, 15, 20, 25]);
+        assert_eq!(calculate_ticks_frequency(30, 6), [0, 10, 20, 30]);
+        assert_eq!(calculate_ticks_frequency(31, 6), [0, 10, 20, 30]);
+        //...
+        assert_eq!(calculate_ticks_frequency(40, 6), [0, 10, 20, 30, 40]);
+        assert_eq!(calculate_ticks_frequency(50, 6), [0, 10, 20, 30, 40, 50]);
+        assert_eq!(calculate_ticks_frequency(60, 6), [0, 20, 40, 60]);
+        assert_eq!(calculate_ticks_frequency(70, 6), [0, 20, 40, 60]);
+        assert_eq!(calculate_ticks_frequency(80, 6), [0, 20, 40, 60, 80]);
+        assert_eq!(calculate_ticks_frequency(90, 6), [0, 20, 40, 60, 80]);
+        assert_eq!(calculate_ticks_frequency(100, 6), [0, 20, 40, 60, 80, 100]);
+        assert_eq!(calculate_ticks_frequency(110, 6), [0, 20, 40, 60, 80, 100]);
+        assert_eq!(calculate_ticks_frequency(120, 6), [0, 40, 80, 120]);
+        assert_eq!(calculate_ticks_frequency(130, 6), [0, 40, 80, 120]);
+        assert_eq!(calculate_ticks_frequency(140, 6), [0, 40, 80, 120]);
+        assert_eq!(calculate_ticks_frequency(150, 6), [0, 50, 100, 150]);
+        //...
+        assert_eq!(calculate_ticks_frequency(3475, 6), [0, 1000, 2000, 3000]);
+    }
+
+    #[test]
+    fn test_distribute_y_ticks() {
+        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 5.0, 5),
+                   ["0", "1", "2", "3", "4", "5"]);
+
+        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 7),
+                   ["0", "1", "2", "", "3", "4", "5", ""]);
+        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 8),
+                   ["0", "1", "", "2", "3", "4", "", "5", ""]);
+        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 9),
+                   ["0", "", "1", "2", "", "3", "4", "", "5", ""]);
+        assert_eq!(distribute_y_ticks(vec![0, 1, 2, 3, 4, 5], 6.0, 10),
+                   ["0", "", "1", "2", "", "3", "", "4", "5", "", ""]);
+    }
+
+    #[test]
+    fn test_x_axis_label() {
+        let l = XAxisLabel {
+            text: "3".to_string(),
+            offset: 2,
+        };
+        assert_eq!(l.len(), 1);
+        assert!(l.footprint() % 2 != 0);
+        assert_eq!(l.start_offset(), 2);
+
+        let l = XAxisLabel {
+            text: "34".to_string(),
+            offset: 2,
+        };
+        assert_eq!(l.len(), 2);
+        assert!(l.footprint() % 2 != 0);
+        assert_eq!(l.start_offset(), 1);
+
+        let l = XAxisLabel {
+            text: "345".to_string(),
+            offset: 2,
+        };
+        assert_eq!(l.len(), 3);
+        assert!(l.footprint() % 2 != 0);
+        assert_eq!(l.start_offset(), 1);
+
+        let l = XAxisLabel {
+            text: "3454".to_string(),
+            offset: 1,
+        };
+        assert_eq!(l.len(), 4);
+        assert!(l.footprint() % 2 != 0);
+        assert_eq!(l.start_offset(), -1);
+    }
 }
