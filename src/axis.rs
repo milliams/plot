@@ -100,16 +100,19 @@ fn number_of_ticks(min: f64, max: f64, step_size: f64) -> usize {
 }
 
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
-fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
+fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: usize) -> f64 {
     let range = max - min;
-    let min_tick_step = (range / max_ticks as f64) + 0.000000000001; // TODO Use next after?
-    // Get our generator of tick step sizes
-    let tick_steps = TickSteps::start_at(min_tick_step);
+    let min_tick_step = (range / max_ticks as f64);
     // Get the first entry which is our smallest possible tick step size
-    let smallest_valid_step =
-        tick_steps.clone().next().expect("ERROR: We've somehow run out of tick step options!");
+    let smallest_valid_step = TickSteps::start_at(min_tick_step)
+        .skip_while(|&s| number_of_ticks(min, max, s) > max_ticks)
+        .next()
+        .expect("ERROR: We've somehow run out of tick step options!");
     // Count how many ticks that relates to
     let actual_num_ticks = number_of_ticks(min, max, smallest_valid_step);
+
+    // Create a new TickStep iterator, starting at the correct lower bound
+    let tick_steps = TickSteps::start_at(smallest_valid_step);
     // Get all the possible tick step sizes that give just as many ticks
     let step_options = tick_steps.take_while(|&s| number_of_ticks(min, max, s) == actual_num_ticks);
     // Get the largest tick step size from the list
@@ -117,7 +120,7 @@ fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
 }
 
 /// Given an axis range, calculate the sensible places to place the ticks
-fn calculate_ticks(min: f64, max: f64, max_ticks: u32) -> Vec<f64> {
+fn calculate_ticks(min: f64, max: f64, max_ticks: usize) -> Vec<f64> {
     let tick_step = calculate_tick_step_for_range(min, max, max_ticks);
     generate_ticks(min, max, tick_step)
 }
@@ -159,6 +162,7 @@ mod tests {
 
     #[test]
     fn test_calculate_tick_step_for_range() {
+        assert_eq!(calculate_tick_step_for_range(0.0, 3.0, 6), 1.0);
         assert_eq!(calculate_tick_step_for_range(0.0, 6.0, 6), 2.0);
         assert_eq!(calculate_tick_step_for_range(0.0, 11.0, 6), 2.0);
         assert_eq!(calculate_tick_step_for_range(0.0, 14.0, 6), 4.0);
