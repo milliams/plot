@@ -68,7 +68,7 @@ fn number_of_ticks(min: f64, max: f64, step_size: f64) -> u32 {
 }
 
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
-pub fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 {
+pub fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
     let range = max - min;
     let min_tick_step = ((range / max_ticks as f64) + 1.0) as u32;
     if range > 1.0 {
@@ -94,12 +94,12 @@ pub fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: i32) -> f64 
 
 /// Given a maximum frequency for the histogram and a maximum number of ticks,
 /// work out the step between ticks
-fn calculate_tick_step_for_frequency(max: u32, max_ticks: i32) -> u32 {
+fn calculate_tick_step_for_frequency(max: u32, max_ticks: u32) -> u32 {
     calculate_tick_step_for_range(0.0, max as f64, max_ticks) as u32
 }
 
 /// Given a upper bound, calculate the sensible places to place the ticks
-pub fn calculate_ticks_frequency(max: u32, max_ticks: i32) -> Vec<u32> {
+pub fn calculate_ticks_frequency(max: u32, max_ticks: u32) -> Vec<u32> {
     let tick_step = calculate_tick_step_for_frequency(max, max_ticks);
     Vec::from_iter(generate_ticks(0.0, max as f64, tick_step as f64).iter().map(|&t| t as u32))
 }
