@@ -17,7 +17,7 @@ fn value_to_axis_cell_offset(value: f64, min: f64, max: f64, face_cells: u32) ->
 /// the total scale of the axis
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to tick value
-pub fn tick_offset_map(ticks: &Vec<f64>, min: f64, max: f64, face_width: u32) -> HashMap<u32, f64> {
+fn tick_offset_map(ticks: &Vec<f64>, min: f64, max: f64, face_width: u32) -> HashMap<u32, f64> {
     ticks.iter()
         .map(|&tick| (value_to_axis_cell_offset(tick, min, max, face_width), tick))
         .collect()
