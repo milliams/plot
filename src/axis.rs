@@ -33,35 +33,36 @@ impl Axis {
 
 /// The base units for the step sizes
 /// They should be within one order of magnitude, e.g. [1,10)
-const BASE_STEPS: [u64; 4] = [1, 2, 4, 5];
+const BASE_STEPS: [u32; 4] = [1, 2, 4, 5];
 
 #[derive(Debug,Clone)]
 struct TickSteps {
-    next: u64,
+    next: f64,
 }
 
 impl TickSteps {
-    fn start_at(start: u64) -> TickSteps {
-        let start_options = TickSteps::scaled_steps(&start);
-        let overflow = start_options[0] * 10;
+    fn start_at(start: f64) -> TickSteps {
+        let start_options = TickSteps::scaled_steps(start);
+        let overflow = start_options[0] * 10.0;
         let curr = start_options.iter().skip_while(|&step| step < &start).next();
 
         TickSteps { next: *curr.unwrap_or(&overflow) }
     }
 
-    fn scaled_steps(curr: &u64) -> Vec<u64> {
-        let base_step_scale = 10u64.pow((*curr as f64).log10() as u32);
-        Vec::from_iter(BASE_STEPS.iter().map(|s| s * base_step_scale))
+    fn scaled_steps(curr: f64) -> Vec<f64> {
+        let power = curr.log10().floor();
+        let base_step_scale = 10f64.powf(power);
+        Vec::from_iter(BASE_STEPS.iter().map(|&s| (s as f64 * base_step_scale)))
     }
 }
 
 impl Iterator for TickSteps {
-    type Item = u64;
+    type Item = f64;
 
-    fn next(&mut self) -> Option<u64> {
+    fn next(&mut self) -> Option<f64> {
         let curr = self.next; // cache the value we're currently on
-        let curr_steps = TickSteps::scaled_steps(&self.next);
-        let overflow: u64 = curr_steps[0] * 10;
+        let curr_steps = TickSteps::scaled_steps(self.next);
+        let overflow = curr_steps[0] * 10.0;
         self.next = *curr_steps.iter().skip_while(|&s| s <= &curr).next().unwrap_or(&overflow);
         Some(curr)
     }
@@ -94,33 +95,25 @@ fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
 }
 
 /// Given a range and a step size, work out how many ticks will be displayed
-fn number_of_ticks(min: f64, max: f64, step_size: f64) -> u32 {
-    generate_ticks(min, max, step_size).len() as u32
+fn number_of_ticks(min: f64, max: f64, step_size: f64) -> usize {
+    generate_ticks(min, max, step_size).len()
 }
 
 /// Given a range of values, and a maximum number of ticks, calulate the step between the ticks
 fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
     let range = max - min;
-    let min_tick_step = ((range / max_ticks as f64) + 1.0) as u64;
-    if range > 1.0 {
-        // Get our generator of tick step sizes
-        let tick_steps = TickSteps::start_at(min_tick_step);
-        // Get the first entry which is our smallest possible tick step size
-        let smallest_valid_step = tick_steps.clone()
-            .next()
-            .expect("ERROR: We've somehow run out of tick step options!") as
-                                  f64;
-        // Count how many ticks that relates to
-        let actual_num_ticks = number_of_ticks(min, max, smallest_valid_step);
-        // Get all the possible tick step sizes that give just as many ticks
-        let step_options =
-            tick_steps.take_while(|&s| number_of_ticks(min, max, s as f64) == actual_num_ticks);
-        // Get the largest tick step size from the list
-        step_options.max().expect("ERROR: No tick options") as f64
-    } else {
-        // We are on some small range so will need to be careful to represent the ticks correctly
-        0.1 // TODO Be just a tad cleverer than this...
-    }
+    let min_tick_step = (range / max_ticks as f64) + 0.000000000001; // TODO Use next after?
+    // Get our generator of tick step sizes
+    let tick_steps = TickSteps::start_at(min_tick_step);
+    // Get the first entry which is our smallest possible tick step size
+    let smallest_valid_step =
+        tick_steps.clone().next().expect("ERROR: We've somehow run out of tick step options!");
+    // Count how many ticks that relates to
+    let actual_num_ticks = number_of_ticks(min, max, smallest_valid_step);
+    // Get all the possible tick step sizes that give just as many ticks
+    let step_options = tick_steps.take_while(|&s| number_of_ticks(min, max, s) == actual_num_ticks);
+    // Get the largest tick step size from the list
+    step_options.fold(-1. / 0., |a, b| f64::max(a, b))
 }
 
 /// Given an axis range, calculate the sensible places to place the ticks
@@ -135,21 +128,21 @@ mod tests {
 
     #[test]
     fn test_tick_step_generator() {
-        let t = TickSteps::start_at(1);
+        let t = TickSteps::start_at(1.0);
         let ts = Vec::from_iter(t.take(7));
-        assert_eq!(ts, [1, 2, 4, 5, 10, 20, 40]);
+        assert_eq!(ts, [1.0, 2.0, 4.0, 5.0, 10.0, 20.0, 40.0]);
 
-        let t = TickSteps::start_at(100);
+        let t = TickSteps::start_at(100.0);
         let ts = Vec::from_iter(t.take(5));
-        assert_eq!(ts, [100, 200, 400, 500, 1000]);
+        assert_eq!(ts, [100.0, 200.0, 400.0, 500.0, 1000.0]);
 
-        let t = TickSteps::start_at(3);
+        let t = TickSteps::start_at(3.0);
         let ts = Vec::from_iter(t.take(5));
-        assert_eq!(ts, [4, 5, 10, 20, 40]);
+        assert_eq!(ts, [4.0, 5.0, 10.0, 20.0, 40.0]);
 
-        let t = TickSteps::start_at(8);
+        let t = TickSteps::start_at(8.0);
         let ts = Vec::from_iter(t.take(3));
-        assert_eq!(ts, [10, 20, 40]);
+        assert_eq!(ts, [10.0, 20.0, 40.0]);
     }
 
     #[test]
@@ -172,12 +165,30 @@ mod tests {
         assert_eq!(calculate_tick_step_for_range(0.0, 15.0, 6), 5.0);
         assert_eq!(calculate_tick_step_for_range(-1.0, 5.0, 6), 2.0);
         assert_eq!(calculate_tick_step_for_range(-7.93, 15.58, 6), 5.0);
+        assert_eq!(calculate_tick_step_for_range(0.0, 0.06, 6), 0.02);
     }
 
     #[test]
     fn test_calculate_ticks() {
-        //assert_eq!(calculate_ticks(1), [0, 1]); // step up in 1s
-        assert_eq!(calculate_ticks(0.0, 2.0, 6), [0.0, 1.0, 2.0]);
+
+        macro_rules! assert_approx_eq {
+            ($a:expr, $b:expr) => ({
+                let (a, b) = (&$a, &$b);
+                assert!((*a - *b).abs() < 1.0e-6,
+                        "{} is not approximately equal to {}", *a, *b);
+            })
+        }
+
+        for (prod, want) in calculate_ticks(0.0, 1.0, 6)
+            .iter()
+            .zip([0.0, 0.2, 0.4, 0.6, 0.8, 1.0].iter()) {
+            assert_approx_eq!(prod, want);
+        }
+        for (prod, want) in calculate_ticks(0.0, 2.0, 6)
+            .iter()
+            .zip([0.0, 0.4, 0.8, 1.2, 1.6, 2.0].iter()) {
+            assert_approx_eq!(prod, want);
+        }
         assert_eq!(calculate_ticks(0.0, 3.0, 6), [0.0, 1.0, 2.0, 3.0]);
         assert_eq!(calculate_ticks(0.0, 4.0, 6), [0.0, 1.0, 2.0, 3.0, 4.0]);
         assert_eq!(calculate_ticks(0.0, 5.0, 6), [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]);
