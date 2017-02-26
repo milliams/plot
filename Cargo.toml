@@ -2,6 +2,13 @@
 name = "plot"
 version = "0.1.0"
 authors = ["Matt Williams <matt@milliams.com>"]
+description = "A command-line plotting and statistics tool"
+license = "MIT"
+repository = "https://github.com/milliams/plot"
+categories = ["command-line-utilities", "visualization"]
+
+[badges]
+travis-ci = { repository = "https://github.com/milliams/plot", branch = "master" }
 
 [dependencies]
 clap = "2.20.4"
