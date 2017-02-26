@@ -1,5 +1,40 @@
 use std::iter::FromIterator;
 
+#[derive(Debug)]
+pub struct Axis {
+    lower: f64,
+    upper: f64,
+    ticks: Vec<f64>,
+}
+
+impl Axis {
+    pub fn new(lower: f64, upper: f64) -> Axis {
+        assert!(lower < upper);
+        let default_max_ticks = 6;
+        Axis {
+            lower: lower,
+            upper: upper,
+            ticks: calculate_ticks(lower, upper, default_max_ticks),
+        }
+    }
+
+    pub fn max(&self) -> f64 {
+        self.upper
+    }
+
+    pub fn min(&self) -> f64 {
+        self.lower
+    }
+
+    pub fn ticks(&self) -> &Vec<f64> {
+        &self.ticks
+    }
+
+    pub fn recalculate_ticks(&mut self, max_ticks: u32) {
+        self.ticks = calculate_ticks(self.lower, self.upper, max_ticks);
+    }
+}
+
 /// The base units for the step sizes
 /// They should be within one order of magnitude, e.g. [1,10)
 const BASE_STEPS: [u32; 4] = [1, 2, 4, 5];
@@ -92,8 +127,8 @@ fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: u32) -> f64 {
     }
 }
 
-/// Given ana xis range, calculate the sensible places to place the ticks
-pub fn calculate_ticks(min: f64, max: f64, max_ticks: u32) -> Vec<f64> {
+/// Given an axis range, calculate the sensible places to place the ticks
+fn calculate_ticks(min: f64, max: f64, max_ticks: u32) -> Vec<f64> {
     let tick_step = calculate_tick_step_for_range(min, max, max_ticks);
     generate_ticks(min, max, tick_step)
 }

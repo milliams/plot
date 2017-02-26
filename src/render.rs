@@ -8,18 +8,19 @@ use axis;
 
 // Given a value like a tick label or a bin count,
 // calculate how far from the x-axis it should be plotted
-fn value_to_axis_cell_offset(value: f64, min: f64, max: f64, face_cells: u32) -> u32 {
-    let data_per_cell = (max - min) / face_cells as f64;
-    ((value - min) / data_per_cell).round() as u32
+fn value_to_axis_cell_offset(value: f64, axis: &axis::Axis, face_cells: u32) -> u32 {
+    let data_per_cell = (axis.max() - axis.min()) / face_cells as f64;
+    ((value - axis.min()) / data_per_cell).round() as u32
 }
 
 /// Given a list of ticks to display,
 /// the total scale of the axis
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to tick value
-fn tick_offset_map(ticks: &Vec<f64>, min: f64, max: f64, face_width: u32) -> HashMap<u32, f64> {
-    ticks.iter()
-        .map(|&tick| (value_to_axis_cell_offset(tick, min, max, face_width), tick))
+fn tick_offset_map(axis: &axis::Axis, face_width: u32) -> HashMap<u32, f64> {
+    axis.ticks()
+        .iter()
+        .map(|&tick| (value_to_axis_cell_offset(tick, axis, face_width), tick))
         .collect()
 }
 
@@ -66,13 +67,12 @@ pub fn draw_histogram(h: histogram::Histogram) {
     // The face is the actual area of the graph with data on it, excluding axes and labels
     let face_width = h.num_bins() * 3;
     let face_height = 30;
-    let max_y_ticks = 6;
-    let max_x_ticks = 6;
 
     let largest_bin_count = *h.bin_counts.iter().max().expect("ERROR: There are no bins");
 
-    let y_ticks = axis::calculate_ticks(0.0, largest_bin_count as f64, max_y_ticks);
-    let y_tick_map = tick_offset_map(&y_ticks, 0.0, largest_bin_count as f64, face_height as u32);
+    let y_axis = axis::Axis::new(0.0, largest_bin_count as f64);
+    let y_ticks = y_axis.ticks();
+    let y_tick_map = tick_offset_map(&y_axis, face_height as u32);
 
     let longest_y_label_width = y_ticks.iter()
         .map(|n| n.to_string().len())
@@ -81,8 +81,8 @@ pub fn draw_histogram(h: histogram::Histogram) {
 
     let min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
     let max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
-    let x_ticks = axis::calculate_ticks(min, max, max_x_ticks);
-    let x_tick_map = tick_offset_map(&x_ticks, min, max, face_width as u32);
+    let x_axis = axis::Axis::new(min, max);
+    let x_tick_map = tick_offset_map(&x_axis, face_width as u32);
 
     let mut tick_marks = "".to_string();
     for cell in 0..face_width + 1 {
