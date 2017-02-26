@@ -19,9 +19,7 @@ then you can plot a histogram of that with
 
     $ cat data.txt | plot hist
 
-which will output something like
-
-.. code-block:: bash
+which will output something like::
 
     12-|                  ###            ###
        |                  ###            ###
