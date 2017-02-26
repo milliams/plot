@@ -80,8 +80,10 @@ fn stats() {
     let min = data.iter().fold(1. / 0., |a, &b| f64::min(a, b));
     let total: f64 = data.iter().sum();
     let average = total / data.len() as f64;
+    let length = data.len();
 
     println!("    Max: {}", max);
     println!("    Min: {}", min);
     println!("Average: {}", average);
+    println!(" Length: {}", length);
 }
