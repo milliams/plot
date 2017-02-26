@@ -68,23 +68,25 @@ pub fn draw_histogram(h: histogram::Histogram) {
     let face_width = h.num_bins() * 3;
     let face_height = 30;
 
+    // Get the strings and offsets we'll use for the y-axis
     let largest_bin_count = *h.bin_counts.iter().max().expect("ERROR: There are no bins");
-
     let y_axis = axis::Axis::new(0.0, largest_bin_count as f64);
-    let y_ticks = y_axis.ticks();
     let y_tick_map = tick_offset_map(&y_axis, face_height as u32);
 
-    let longest_y_label_width = y_ticks.iter()
+    // Get the strings and offsets we'll use for the x-axis
+    let x_min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
+    let x_max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
+    let x_axis = axis::Axis::new(x_min, x_max);
+    let x_tick_map = tick_offset_map(&x_axis, face_width as u32);
+
+    // Find a minimum size for the left gutter
+    let longest_y_label_width = y_tick_map.values()
         .map(|n| n.to_string().len())
         .max()
         .expect("ERROR: There are no y-axis ticks");
 
-    let min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
-    let max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
-    let x_axis = axis::Axis::new(min, max);
-    let x_tick_map = tick_offset_map(&x_axis, face_width as u32);
-
-    let mut tick_marks = "".to_string();
+    // Create a string which will be printed to give the x-axis tick marks
+    let mut x_tick_marks = "".to_string();
     for cell in 0..face_width + 1 {
         let cell = cell as u32;
         let ch = if x_tick_map.get(&cell).is_some() {
@@ -92,9 +94,10 @@ pub fn draw_histogram(h: histogram::Histogram) {
         } else {
             ' '
         };
-        tick_marks.push(ch);
+        x_tick_marks.push(ch);
     }
 
+    // Create a string which will be printed to give the x-axis labels
     let x_labels = create_x_axis_labels(&x_tick_map);
     let start_offset = x_labels.iter()
         .map(|label| label.start_offset())
@@ -102,36 +105,36 @@ pub fn draw_histogram(h: histogram::Histogram) {
         .expect("ERROR: Could not compute start offset of x-axis");
 
     // This string will be printed, starting at start_offset relative to the x-axis zero cell
-    let mut tick_label_string = "".to_string();
-
+    let mut x_axis_label_string = "".to_string();
     for label in (&x_labels).iter() {
-        let spaces_to_append = label.start_offset() - start_offset - tick_label_string.len() as i32;
+        let spaces_to_append = label.start_offset() - start_offset - x_axis_label_string.len() as i32;
         if spaces_to_append.is_positive() {
             for _ in 0..spaces_to_append {
-                tick_label_string.push(' ');
+                x_axis_label_string.push(' ');
             }
         } else {
             for _ in 0..spaces_to_append.wrapping_neg() {
-                tick_label_string.pop();
+                x_axis_label_string.pop();
             }
         }
         let formatted_label = format!("{: ^footprint$}", label.text, footprint = label.footprint());
-        tick_label_string.push_str(&formatted_label);
+        x_axis_label_string.push_str(&formatted_label);
     }
 
+    // Go, line-by-line printing the y-axis and the face
     for line in 0..face_height {
-        let axis_label = match y_tick_map.get(&(face_height - line)) {
+        let cell_position = face_height - line;
+        let axis_label = match y_tick_map.get(&cell_position) {
             Some(v) => v.to_string(),
             None => "".to_string(),
         };
         let mut cols = String::new();
         for &bin_count in h.bin_counts.iter() {
             // between 0..1 how full the bin is compared to largest
-            let bin_height_fraction = bin_count as f32 / largest_bin_count as f32;
-            let bin_height_characters = (bin_height_fraction * face_height as f32) as u32;
-            if bin_height_characters == face_height - line {
+            let bin_height_characters = value_to_axis_cell_offset(bin_count as f64, &y_axis, face_height);
+            if bin_height_characters == cell_position {
                 cols.push_str("---");
-            } else if bin_height_characters > face_height - line {
+            } else if bin_height_characters > cell_position {
                 cols.push_str("| |");
             } else {
                 cols.push_str("   ");
@@ -143,21 +146,25 @@ pub fn draw_histogram(h: histogram::Histogram) {
                  cols,
                  label_width = longest_y_label_width);
     }
+
+    // Print the x-axis line and the zero-point of the y-axis
     println!("{:>label_width$} +{:-<plot_width$}",
              "0",
              "",
              label_width = longest_y_label_width,
              plot_width = face_width);
 
+    // Print the x-axis ticks
     println!("{:>label_width$} {:-<plot_width$}",
              "",
-             tick_marks,
+             x_tick_marks,
              label_width = longest_y_label_width,
              plot_width = face_width + 1);
 
+    // Print the x-axis labels
     println!("{:>label_width$} {: <plot_width$}",
              "",
-             tick_label_string,
+             x_axis_label_string,
              label_width = (longest_y_label_width as i32 + start_offset) as usize,
              plot_width = (face_width as i32 + 1 + start_offset) as usize);
 }

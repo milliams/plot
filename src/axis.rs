@@ -29,10 +29,6 @@ impl Axis {
     pub fn ticks(&self) -> &Vec<f64> {
         &self.ticks
     }
-
-    pub fn recalculate_ticks(&mut self, max_ticks: u32) {
-        self.ticks = calculate_ticks(self.lower, self.upper, max_ticks);
-    }
 }
 
 /// The base units for the step sizes
