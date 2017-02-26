@@ -202,9 +202,9 @@ fn test_calculate_ticks() {
 
 // Given a value like a tick label or a bin count,
 // calculate how far from the x-axis it should be plotted
-fn value_to_distance_from_x_axis(value: u32, max: u32, face_lines: u32) -> u32 {
-    let data_per_cell_height = max as f64 / face_lines as f64;
-    (value as f64 / data_per_cell_height).round() as u32
+fn value_to_axis_cell_offset(value: f64, min: f64, max: f64, face_cells: u32) -> u32 {
+    let data_per_cell = (max - min) / face_cells as f64;
+    (value / data_per_cell).round() as u32
 }
 
 /// Given a list of ticks to display,
@@ -214,7 +214,7 @@ fn value_to_distance_from_x_axis(value: u32, max: u32, face_lines: u32) -> u32 {
 pub fn distribute_y_ticks(ticks: Vec<u32>, max: u32, face_lines: u32) -> Vec<String> {
     // map of distance from x-axis to tick value
     let m: HashMap<_, _> = ticks.iter()
-        .map(|&tick| (value_to_distance_from_x_axis(tick, max, face_lines), tick))
+        .map(|&tick| (value_to_axis_cell_offset(tick as f64, 0.0, max as f64, face_lines), tick))
         .collect();
     let p = (0..face_lines + 1).map(|line| if m.contains_key(&line) {
         m[&line].to_string()
