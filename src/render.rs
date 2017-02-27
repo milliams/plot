@@ -203,7 +203,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     // Get the strings and offsets we'll use for the y-axis
     let largest_bin_count = *h.bin_counts.iter().max().expect("ERROR: There are no bins");
     let y_axis = axis::Axis::new(0.0, largest_bin_count as f64);
-    let y_tick_map = tick_offset_map(&y_axis, face_height as u32);
+    let y_tick_map = tick_offset_map(&y_axis, face_height);
 
     // Find a minimum size for the left gutter
     let longest_y_label_width = y_tick_map.values()
@@ -228,14 +228,10 @@ pub fn draw_histogram(h: &histogram::Histogram) {
         .collect();
 
     // Generate a list of strings to be the y-axis line itself
-    let mut y_axis_line_strings = vec![];
-    {
-        let axis_corner = vec!["+".to_string()];
-        let axis_lines = vec!["|".to_string(); face_height as usize];
-        y_axis_line_strings.extend(axis_corner);
-        y_axis_line_strings.extend(axis_lines);
-    }
-    let y_axis_line_strings = y_axis_line_strings;
+    let y_axis_line_strings: Vec<_> = std::iter::repeat("+")
+        .take(1)
+        .chain(std::iter::repeat("|").take(face_height as usize))
+        .collect();
 
     ////////////
     // X Axis //
@@ -248,16 +244,12 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     let x_tick_map = tick_offset_map(&x_axis, face_width as u32);
 
     // Create a string which will be printed to give the x-axis tick marks
-    let mut x_axis_tick_string = "".to_string();
-    for cell in 0..face_width + 1 {
-        let cell = cell as i32;
-        let ch = if x_tick_map.get(&cell).is_some() {
-            '|'
-        } else {
-            ' '
-        };
-        x_axis_tick_string.push(ch);
-    }
+    let x_axis_tick_string: String = (0..face_width + 1)
+        .map(|cell| match x_tick_map.get(&(cell as i32)) {
+            Some(_) => '|',
+            None => ' ',
+        })
+        .collect();
 
     // Create a string which will be printed to give the x-axis labels
     let x_labels = create_x_axis_labels(&x_tick_map);
@@ -285,13 +277,10 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     }
 
     // Generate a list of strings to be the y-axis line itself
-    let mut x_axis_line_string = String::new();
-    {
-        let axis_lines = vec!['-'; face_width as usize];
-        x_axis_line_string.push('+');
-        x_axis_line_string.extend(axis_lines);
-    }
-    let x_axis_line_string = x_axis_line_string;
+    let x_axis_line_string: String = std::iter::repeat('+')
+        .take(1)
+        .chain(std::iter::repeat('-').take(face_width as usize))
+        .collect();
 
     //////////
     // Face //
@@ -304,7 +293,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     /////////////
 
     let left_gutter_width = std::cmp::max(longest_y_label_width as i32 + 1,
-                                          (start_offset as i32).wrapping_neg()) as
+                                          start_offset.wrapping_neg()) as
                             usize;
 
     // Go, line-by-line printing the y-axis and the face
