@@ -6,6 +6,7 @@ use std;
 
 use histogram;
 use axis;
+use utils;
 
 // Given a value like a tick label or a bin count,
 // calculate how far from the x-axis it should be plotted
@@ -48,10 +49,7 @@ fn bound_offset_map(hist: &histogram::Histogram,
 fn bins_for_cells(bound_cell_offsets: &Vec<i32>, face_width: u32) -> Vec<i32> {
     let bound_cells = bound_cell_offsets;
 
-    let first = bound_cells.iter();
-    let second = bound_cells.iter().skip(1);
-    let pairwise = first.zip(second);
-    let bin_width_in_cells = pairwise.map(|(&a, &b)| b - a);
+    let bin_width_in_cells = utils::pairwise(bound_cells).map(|(&a, &b)| b - a);
     let bins_cell_offset = bound_cells.first().unwrap();
 
     let mut cell_bins: Vec<i32> = vec![i32::min_value()]; // start with a prepended negative null

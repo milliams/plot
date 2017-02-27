@@ -8,6 +8,7 @@ use std::io::{self, BufRead};
 mod histogram;
 mod render;
 mod axis;
+mod utils;
 
 fn main() {
     let matches = App::new("Command-line stats")
