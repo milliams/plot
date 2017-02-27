@@ -118,6 +118,79 @@ fn create_x_axis_labels(x_tick_map: &HashMap<i32, f64>) -> Vec<XAxisLabel> {
     ls
 }
 
+/// Given a histogram,
+/// the x ands y-axes
+/// and the face height and width,
+/// create the strings to be drawn as the face
+fn render_face_bars(h: &histogram::Histogram,
+                    x_axis: &axis::Axis,
+                    y_axis: &axis::Axis,
+                    face_width: u32,
+                    face_height: u32)
+                    -> Vec<String> {
+    let bound_cells = bound_cell_offsets(h, x_axis, face_width);
+
+    let cell_bins = bins_for_cells(&bound_cells, face_width);
+
+    // counts per bin converted to rows per column
+    let cell_heights: Vec<_> = cell_bins.iter()
+        .map(|&bin| match bin {
+            None => 0,
+            Some(b) => {
+                value_to_axis_cell_offset(h.bin_counts[b as usize] as f64, y_axis, face_height)
+            }
+        })
+        .collect();
+
+    let mut face_strings: Vec<String> = vec![];
+
+    for line in 1..face_height + 1 {
+        let mut line_string = String::new();
+        for column in 1..face_width as usize + 1 {
+            // maybe use a HashSet for faster `contains()`?
+            line_string.push(if bound_cells.contains(&(column as i32)) {
+                // The value of the column _below_ this one
+                let b = cell_heights[column - 1].cmp(&(line as i32));
+                // The value of the column _above_ this one
+                let a = cell_heights[column + 1].cmp(&(line as i32));
+                match b {
+                    std::cmp::Ordering::Less => {
+                        match a {
+                            std::cmp::Ordering::Less => ' ',
+                            std::cmp::Ordering::Equal => '-', // or 'r'-shaped corner
+                            std::cmp::Ordering::Greater => '|',
+                        }
+                    }
+                    std::cmp::Ordering::Equal => {
+                        match a {
+                            std::cmp::Ordering::Less => '-', // or backwards 'r'
+                            std::cmp::Ordering::Equal => '-', // or 'T'-shaped
+                            std::cmp::Ordering::Greater => '|', // or '-|'
+                        }
+                    }
+                    std::cmp::Ordering::Greater => {
+                        match a {
+                            std::cmp::Ordering::Less => '|',
+                            std::cmp::Ordering::Equal => '|', // or '|-'
+                            std::cmp::Ordering::Greater => '|',
+                        }
+                    }
+                }
+            } else {
+                let bin_height_cells = cell_heights[column];
+
+                if bin_height_cells == line as i32 {
+                    '-' // bar cap
+                } else {
+                    ' ' //
+                }
+            });
+        }
+        face_strings.push(line_string);
+    }
+    face_strings
+}
+
 pub fn draw_histogram(h: &histogram::Histogram) {
     // The face is the actual area of the graph with data on it, excluding axes and labels
     let face_width = h.num_bins() * 3;
@@ -224,67 +297,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     // Face //
     //////////
 
-    let bound_cells = bound_cell_offsets(h, &x_axis, face_width as u32);
-
-    let cell_bins = bins_for_cells(&bound_cells, face_width as u32);
-
-    // counts per bin converted to rows per column
-    let cell_heights: Vec<_> = cell_bins.iter()
-        .map(|&bin| match bin {
-            None => 0,
-            Some(b) => {
-                value_to_axis_cell_offset(h.bin_counts[b as usize] as f64, &y_axis, face_height)
-            }
-        })
-        .collect();
-
-    let mut face_strings: Vec<String> = vec![];
-
-    for line in 1..face_height + 1 {
-        let mut line_string = String::new();
-        for column in 1..face_width + 1 {
-            // maybe use a HashSet for faster `contains()`?
-            line_string.push(if bound_cells.contains(&(column as i32)) {
-                // The value of the column _below_ this one
-                let b = cell_heights[column - 1].cmp(&(line as i32));
-                // The value of the column _above_ this one
-                let a = cell_heights[column + 1].cmp(&(line as i32));
-                match b {
-                    std::cmp::Ordering::Less => {
-                        match a {
-                            std::cmp::Ordering::Less => ' ',
-                            std::cmp::Ordering::Equal => '-', // or 'r'-shaped corner
-                            std::cmp::Ordering::Greater => '|',
-                        }
-                    }
-                    std::cmp::Ordering::Equal => {
-                        match a {
-                            std::cmp::Ordering::Less => '-', // or backwards 'r'
-                            std::cmp::Ordering::Equal => '-', // or 'T'-shaped
-                            std::cmp::Ordering::Greater => '|', // or '-|'
-                        }
-                    }
-                    std::cmp::Ordering::Greater => {
-                        match a {
-                            std::cmp::Ordering::Less => '|',
-                            std::cmp::Ordering::Equal => '|', // or '|-'
-                            std::cmp::Ordering::Greater => '|',
-                        }
-                    }
-                }
-            } else {
-                let bin_height_cells = cell_heights[column];
-
-                if bin_height_cells == line as i32 {
-                    '-' // bar cap
-                } else {
-                    ' ' //
-                }
-            });
-        }
-        face_strings.push(line_string);
-    }
-    let face_strings = face_strings;
+    let face_strings = render_face_bars(&h, &x_axis, &y_axis, face_width as u32, face_height);
 
     /////////////
     // Drawing //
