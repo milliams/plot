@@ -43,10 +43,10 @@ fn bound_offset_map(hist: &histogram::Histogram,
 
 /// calculate for each cell, which bin it is representing
 /// Cells which straddle bins will return the bin just on the lower side of the centre of the cell
-/// Will return a vector with (face_width + 2) entries to represent underflow and overflow cells
-/// cells which do not map to a bin will return either i32::min_value() or i32::max_value().
+/// Will return a vector with (`face_width + 2`) entries to represent underflow and overflow cells
+/// cells which do not map to a bin will return either `i32::min_value()` or `i32::max_value()`.
 /// TODO Use an enum for the invalid bins?
-fn bins_for_cells(bound_cell_offsets: &Vec<i32>, face_width: u32) -> Vec<i32> {
+fn bins_for_cells(bound_cell_offsets: &[i32], face_width: u32) -> Vec<i32> {
     let bound_cells = bound_cell_offsets;
 
     let bin_width_in_cells = utils::pairwise(bound_cells).map(|(&a, &b)| b - a);
@@ -64,7 +64,7 @@ fn bins_for_cells(bound_cell_offsets: &Vec<i32>, face_width: u32) -> Vec<i32> {
     if *bins_cell_offset < 0 {
         cell_bins = Vec::from_iter(cell_bins.iter()
             .skip(bins_cell_offset.wrapping_abs() as usize)
-            .map(|&a| a));
+            .cloned());
     } else if *bins_cell_offset > 0 {
         let mut new_bins = vec![i32::min_value(); (*bins_cell_offset) as usize];
         new_bins.extend(cell_bins.iter());
@@ -78,7 +78,7 @@ fn bins_for_cells(bound_cell_offsets: &Vec<i32>, face_width: u32) -> Vec<i32> {
         cell_bins = new_bins;
     } else if cell_bins.len() > face_width as usize + 2 {
         let new_bins = cell_bins;
-        cell_bins = Vec::from_iter(new_bins.iter().take(face_width as usize + 2).map(|&a| a));
+        cell_bins = Vec::from_iter(new_bins.iter().take(face_width as usize + 2).cloned());
     }
 
     cell_bins
@@ -123,7 +123,7 @@ fn create_x_axis_labels(x_tick_map: &HashMap<i32, f64>) -> Vec<XAxisLabel> {
     ls
 }
 
-pub fn draw_histogram(h: histogram::Histogram) {
+pub fn draw_histogram(h: &histogram::Histogram) {
     // The face is the actual area of the graph with data on it, excluding axes and labels
     let face_width = h.num_bins() * 3;
     let face_height = 30u32;
@@ -227,9 +227,9 @@ pub fn draw_histogram(h: histogram::Histogram) {
     // Face //
     //////////
 
-    let bound_offsets = bound_offset_map(&h, &x_axis, face_width as u32);
+    let bound_offsets = bound_offset_map(h, &x_axis, face_width as u32);
 
-    let mut bound_cells = Vec::from_iter(bound_offsets.keys().map(|&a| a));
+    let mut bound_cells = Vec::from_iter(bound_offsets.keys().cloned());
     bound_cells.sort();
     let bound_cells = bound_cells;
     let cell_bins = bins_for_cells(&bound_cells, face_width as u32);
@@ -304,13 +304,13 @@ pub fn draw_histogram(h: histogram::Histogram) {
     // Go, line-by-line printing the y-axis and the face
     for line in 0..face_height {
         let cell_position = face_height - line;
-        let ref axis_label = y_label_strings[*&cell_position as usize];
-        let ref axis_tick = y_tick_strings[*&cell_position as usize];
-        let ref axis_line = y_axis_line_strings[*&cell_position as usize];
+        let axis_label = &y_label_strings[cell_position as usize];
+        let axis_tick = &y_tick_strings[cell_position as usize];
+        let axis_line = &y_axis_line_strings[cell_position as usize];
         let mut axis_label_and_tick = String::new();
         axis_label_and_tick.push_str(axis_label);
         axis_label_and_tick.push_str(axis_tick);
-        let ref face_line = face_strings[(*&cell_position as usize) - 1];
+        let face_line = &face_strings[(cell_position as usize) - 1];
         println!("{:>left_gutter_width$}{}{}",
                  axis_label_and_tick,
                  axis_line,

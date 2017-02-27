@@ -46,7 +46,7 @@ fn get_single_column() -> Vec<f64> {
         data.push(line_text.parse::<f64>()
             .expect(&format!("ERROR: Could not parse '{}' as an f64", line_text)));
     }
-    return data;
+    data
 }
 
 fn hist() {
@@ -54,7 +54,7 @@ fn hist() {
 
     let h = histogram::Histogram::from_vec(&data);
 
-    render::draw_histogram(h);
+    render::draw_histogram(&h);
 }
 
 fn average() {

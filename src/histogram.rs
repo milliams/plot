@@ -15,7 +15,7 @@ pub struct Histogram {
 }
 
 impl Histogram {
-    pub fn from_vec(v: &Vec<f64>) -> Histogram {
+    pub fn from_vec(v: &[f64]) -> Histogram {
 
         let max = v.iter().fold(-1. / 0., |a, &b| f64::max(a, b));
         let min = v.iter().fold(1. / 0., |a, &b| f64::min(a, b));
@@ -35,11 +35,9 @@ impl Histogram {
 
         for &val in v.iter() {
             let mut bin = ((val - min) / bin_width) as usize;
-            if bin == num_bins {
-                //We might be right on the top-most bound
-                if val == max {
-                    bin = num_bins - 1;
-                }
+            if bin == num_bins && val == max {
+                //We are right on the top-most bound
+                bin = num_bins - 1;
             }
             bins[bin] += 1;
         }

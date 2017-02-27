@@ -116,7 +116,7 @@ fn calculate_tick_step_for_range(min: f64, max: f64, max_ticks: usize) -> f64 {
     // Get all the possible tick step sizes that give just as many ticks
     let step_options = tick_steps.take_while(|&s| number_of_ticks(min, max, s) == actual_num_ticks);
     // Get the largest tick step size from the list
-    step_options.fold(-1. / 0., |a, b| f64::max(a, b))
+    step_options.fold(-1. / 0., f64::max)
 }
 
 /// Given an axis range, calculate the sensible places to place the ticks
