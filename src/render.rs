@@ -1,7 +1,6 @@
 //! A module for plotting graphs
 
 use std::collections::HashMap;
-use std::iter::FromIterator;
 use std;
 
 use histogram;
@@ -31,9 +30,10 @@ fn tick_offset_map(axis: &axis::Axis, face_width: u32) -> HashMap<i32, f64> {
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to bin bound
 fn bound_cell_offsets(hist: &histogram::Histogram, axis: &axis::Axis, face_width: u32) -> Vec<i32> {
-    Vec::from_iter(hist.bin_bounds
+    hist.bin_bounds
         .iter()
-        .map(|&bound| value_to_axis_cell_offset(bound, axis, face_width)))
+        .map(|&bound| value_to_axis_cell_offset(bound, axis, face_width))
+        .collect()
 }
 
 /// calculate for each cell which bin it is representing
@@ -56,9 +56,8 @@ fn bins_for_cells(bound_cell_offsets: &[i32], face_width: u32) -> Vec<Option<i32
     cell_bins.push(None); // end with an appended positive null
 
     if *bins_cell_offset < 0 {
-        cell_bins = Vec::from_iter(cell_bins.iter()
-            .skip(bins_cell_offset.wrapping_abs() as usize)
-            .cloned());
+        cell_bins =
+            cell_bins.iter().skip(bins_cell_offset.wrapping_abs() as usize).cloned().collect();
     } else if *bins_cell_offset > 0 {
         let mut new_bins = vec![None; (*bins_cell_offset) as usize];
         new_bins.extend(cell_bins.iter());
@@ -72,7 +71,7 @@ fn bins_for_cells(bound_cell_offsets: &[i32], face_width: u32) -> Vec<Option<i32
         cell_bins = new_bins;
     } else if cell_bins.len() > face_width as usize + 2 {
         let new_bins = cell_bins;
-        cell_bins = Vec::from_iter(new_bins.iter().take(face_width as usize + 2).cloned());
+        cell_bins = new_bins.iter().take(face_width as usize + 2).cloned().collect();
     }
 
     cell_bins
@@ -107,12 +106,14 @@ impl XAxisLabel {
 }
 
 fn create_x_axis_labels(x_tick_map: &HashMap<i32, f64>) -> Vec<XAxisLabel> {
-    let mut ls = Vec::from_iter(x_tick_map.iter().map(|(&offset, &tick)| {
-        XAxisLabel {
-            text: tick.to_string(),
-            offset: offset,
-        }
-    }));
+    let mut ls: Vec<_> = x_tick_map.iter()
+        .map(|(&offset, &tick)| {
+            XAxisLabel {
+                text: tick.to_string(),
+                offset: offset,
+            }
+        })
+        .collect();
     ls.sort_by_key(|l| l.offset);
     ls
 }
@@ -138,18 +139,20 @@ pub fn draw_histogram(h: &histogram::Histogram) {
         .expect("ERROR: There are no y-axis ticks");
 
     // Generate a list of strings to label the y-axis
-    let y_label_strings = Vec::from_iter((0..face_height + 1)
+    let y_label_strings: Vec<_> = (0..face_height + 1)
         .map(|line| match y_tick_map.get(&(line as i32)) {
             Some(v) => v.to_string(),
             None => "".to_string(),
-        }));
+        })
+        .collect();
 
     // Generate a list of strings to tick the y-axis
-    let y_tick_strings = Vec::from_iter((0..face_height + 1)
+    let y_tick_strings: Vec<_> = (0..face_height + 1)
         .map(|line| match y_tick_map.get(&(line as i32)) {
             Some(_) => "-".to_string(),
             None => " ".to_string(),
-        }));
+        })
+        .collect();
 
     // Generate a list of strings to be the y-axis line itself
     let mut y_axis_line_strings = vec![];
@@ -226,13 +229,14 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     let cell_bins = bins_for_cells(&bound_cells, face_width as u32);
 
     // counts per bin converted to rows per column
-    let cell_heights = Vec::from_iter(cell_bins.iter()
+    let cell_heights: Vec<_> = cell_bins.iter()
         .map(|&bin| match bin {
             None => 0,
             Some(b) => {
                 value_to_axis_cell_offset(h.bin_counts[b as usize] as f64, &y_axis, face_height)
             }
-        }));
+        })
+        .collect();
 
     let mut face_strings: Vec<String> = vec![];
 
@@ -339,10 +343,11 @@ mod tests {
     fn test_bins_for_cells() {
         let face_width = 10;
         let n = i32::max_value();
-        let run_bins_for_cells = |bound_cell_offsets: &[i32]| {
-            Vec::from_iter(bins_for_cells(&bound_cell_offsets, face_width)
+        let run_bins_for_cells = |bound_cell_offsets: &[i32]| -> Vec<_> {
+            bins_for_cells(&bound_cell_offsets, face_width)
                 .iter()
-                .map(|&a| a.unwrap_or(n)))
+                .map(|&a| a.unwrap_or(n))
+                .collect()
         };
 
         assert_eq!(run_bins_for_cells(&vec![-4, -1, 4, 7, 10]),

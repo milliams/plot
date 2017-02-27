@@ -1,5 +1,3 @@
-use std::iter::FromIterator;
-
 #[derive(Debug)]
 pub struct Axis {
     lower: f64,
@@ -52,7 +50,7 @@ impl TickSteps {
     fn scaled_steps(curr: f64) -> Vec<f64> {
         let power = curr.log10().floor();
         let base_step_scale = 10f64.powf(power);
-        Vec::from_iter(BASE_STEPS.iter().map(|&s| (s as f64 * base_step_scale)))
+        BASE_STEPS.iter().map(|&s| (s as f64 * base_step_scale)).collect()
     }
 }
 
@@ -132,19 +130,19 @@ mod tests {
     #[test]
     fn test_tick_step_generator() {
         let t = TickSteps::start_at(1.0);
-        let ts = Vec::from_iter(t.take(7));
+        let ts: Vec<_> = t.take(7).collect();
         assert_eq!(ts, [1.0, 2.0, 4.0, 5.0, 10.0, 20.0, 40.0]);
 
         let t = TickSteps::start_at(100.0);
-        let ts = Vec::from_iter(t.take(5));
+        let ts: Vec<_> = t.take(5).collect();
         assert_eq!(ts, [100.0, 200.0, 400.0, 500.0, 1000.0]);
 
         let t = TickSteps::start_at(3.0);
-        let ts = Vec::from_iter(t.take(5));
+        let ts: Vec<_> = t.take(5).collect();
         assert_eq!(ts, [4.0, 5.0, 10.0, 20.0, 40.0]);
 
         let t = TickSteps::start_at(8.0);
-        let ts = Vec::from_iter(t.take(3));
+        let ts: Vec<_> = t.take(3).collect();
         assert_eq!(ts, [10.0, 20.0, 40.0]);
     }
 

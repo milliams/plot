@@ -5,8 +5,6 @@
 //!    - Variable bins implies frequency
 //!    - What should be the default?
 
-use std::iter::FromIterator;
-
 #[derive(Debug)]
 pub struct Histogram {
     pub bin_bounds: Vec<f64>, // will have N_bins + 1 entries
@@ -28,8 +26,8 @@ impl Histogram {
 
         let bin_width = (max - min) / num_bins as f64; // width of bin in real units
 
-        let mut bounds: Vec<f64> = Vec::from_iter((0..num_bins)
-            .map(|n| (n as f64 / num_bins as f64) * range + min));
+        let mut bounds: Vec<f64> =
+            (0..num_bins).map(|n| (n as f64 / num_bins as f64) * range + min).collect();
         bounds.push(max);
         let bounds = bounds;
 
@@ -41,7 +39,7 @@ impl Histogram {
             }
             bins[bin] += 1;
         }
-        let density_per_bin = Vec::from_iter(bins.iter().map(|&x| x as f64 / bin_width));
+        let density_per_bin = bins.iter().map(|&x| x as f64 / bin_width).collect();
 
         Histogram {
             bin_bounds: bounds,
