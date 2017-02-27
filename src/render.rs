@@ -31,14 +31,10 @@ fn tick_offset_map(axis: &axis::Axis, face_width: u32) -> HashMap<i32, f64> {
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to bin bound
 /// TODO maybe this could just return the keys()? That's all we seem to use.
-fn bound_offset_map(hist: &histogram::Histogram,
-                    axis: &axis::Axis,
-                    face_width: u32)
-                    -> HashMap<i32, f64> {
-    hist.bin_bounds
+fn bound_cell_offsets(hist: &histogram::Histogram, axis: &axis::Axis, face_width: u32) -> Vec<i32> {
+    Vec::from_iter(hist.bin_bounds
         .iter()
-        .map(|&bound| (value_to_axis_cell_offset(bound, axis, face_width), bound))
-        .collect()
+        .map(|&bound| value_to_axis_cell_offset(bound, axis, face_width)))
 }
 
 /// calculate for each cell, which bin it is representing
@@ -227,11 +223,8 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     // Face //
     //////////
 
-    let bound_offsets = bound_offset_map(h, &x_axis, face_width as u32);
+    let bound_cells = bound_cell_offsets(h, &x_axis, face_width as u32);
 
-    let mut bound_cells = Vec::from_iter(bound_offsets.keys().cloned());
-    bound_cells.sort();
-    let bound_cells = bound_cells;
     let cell_bins = bins_for_cells(&bound_cells, face_width as u32);
 
     // counts per bin converted to rows per column
@@ -245,47 +238,43 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     let mut face_strings: Vec<String> = vec![];
 
     for line in 1..face_height + 1 {
-
         let mut line_string = String::new();
         for column in 1..face_width + 1 {
-            line_string.push(match bound_offsets.get(&(column as i32)) {
-                Some(_) => {
-                    // The value of the column _below_ this one
-                    let b = cell_heights[column - 1].cmp(&(line as i32));
-                    // The value of the column _above_ this one
-                    let a = cell_heights[column + 1].cmp(&(line as i32));
-                    match b {
-                        std::cmp::Ordering::Less => {
-                            match a {
-                                std::cmp::Ordering::Less => ' ',
-                                std::cmp::Ordering::Equal => '-', // or 'r'-shaped corner
-                                std::cmp::Ordering::Greater => '|',
-                            }
+            line_string.push(if bound_cells.contains(&(column as i32)) {
+                // The value of the column _below_ this one
+                let b = cell_heights[column - 1].cmp(&(line as i32));
+                // The value of the column _above_ this one
+                let a = cell_heights[column + 1].cmp(&(line as i32));
+                match b {
+                    std::cmp::Ordering::Less => {
+                        match a {
+                            std::cmp::Ordering::Less => ' ',
+                            std::cmp::Ordering::Equal => '-', // or 'r'-shaped corner
+                            std::cmp::Ordering::Greater => '|',
                         }
-                        std::cmp::Ordering::Equal => {
-                            match a {
-                                std::cmp::Ordering::Less => '-', // or backwards 'r'
-                                std::cmp::Ordering::Equal => '-', // or 'T'-shaped
-                                std::cmp::Ordering::Greater => '|', // or '-|'
-                            }
+                    }
+                    std::cmp::Ordering::Equal => {
+                        match a {
+                            std::cmp::Ordering::Less => '-', // or backwards 'r'
+                            std::cmp::Ordering::Equal => '-', // or 'T'-shaped
+                            std::cmp::Ordering::Greater => '|', // or '-|'
                         }
-                        std::cmp::Ordering::Greater => {
-                            match a {
-                                std::cmp::Ordering::Less => '|',
-                                std::cmp::Ordering::Equal => '|', // or '|-'
-                                std::cmp::Ordering::Greater => '|',
-                            }
+                    }
+                    std::cmp::Ordering::Greater => {
+                        match a {
+                            std::cmp::Ordering::Less => '|',
+                            std::cmp::Ordering::Equal => '|', // or '|-'
+                            std::cmp::Ordering::Greater => '|',
                         }
                     }
                 }
-                None => {
-                    let bin_height_cells = cell_heights[column];
+            } else {
+                let bin_height_cells = cell_heights[column];
 
-                    if bin_height_cells == line as i32 {
-                        '-'
-                    } else {
-                        ' '
-                    }
+                if bin_height_cells == line as i32 {
+                    '-' // bar cap
+                } else {
+                    ' ' //
                 }
             });
         }
