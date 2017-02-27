@@ -30,39 +30,37 @@ fn tick_offset_map(axis: &axis::Axis, face_width: u32) -> HashMap<i32, f64> {
 /// the total scale of the axis
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to bin bound
-/// TODO maybe this could just return the keys()? That's all we seem to use.
 fn bound_cell_offsets(hist: &histogram::Histogram, axis: &axis::Axis, face_width: u32) -> Vec<i32> {
     Vec::from_iter(hist.bin_bounds
         .iter()
         .map(|&bound| value_to_axis_cell_offset(bound, axis, face_width)))
 }
 
-/// calculate for each cell, which bin it is representing
+/// calculate for each cell which bin it is representing
 /// Cells which straddle bins will return the bin just on the lower side of the centre of the cell
 /// Will return a vector with (`face_width + 2`) entries to represent underflow and overflow cells
-/// cells which do not map to a bin will return either `i32::min_value()` or `i32::max_value()`.
-/// TODO Use an enum for the invalid bins?
-fn bins_for_cells(bound_cell_offsets: &[i32], face_width: u32) -> Vec<i32> {
+/// cells which do not map to a bin will return `None`.
+fn bins_for_cells(bound_cell_offsets: &[i32], face_width: u32) -> Vec<Option<i32>> {
     let bound_cells = bound_cell_offsets;
 
     let bin_width_in_cells = utils::pairwise(bound_cells).map(|(&a, &b)| b - a);
     let bins_cell_offset = bound_cells.first().unwrap();
 
-    let mut cell_bins: Vec<i32> = vec![i32::min_value()]; // start with a prepended negative null
+    let mut cell_bins: Vec<Option<i32>> = vec![None]; // start with a prepended negative null
     for (bin, width) in bin_width_in_cells.enumerate() {
         // repeat bin, width times
         for _ in 0..width {
-            cell_bins.push(bin as i32);
+            cell_bins.push(Some(bin as i32));
         }
     }
-    cell_bins.push(i32::max_value()); // end with an appended positive null
+    cell_bins.push(None); // end with an appended positive null
 
     if *bins_cell_offset < 0 {
         cell_bins = Vec::from_iter(cell_bins.iter()
             .skip(bins_cell_offset.wrapping_abs() as usize)
             .cloned());
     } else if *bins_cell_offset > 0 {
-        let mut new_bins = vec![i32::min_value(); (*bins_cell_offset) as usize];
+        let mut new_bins = vec![None; (*bins_cell_offset) as usize];
         new_bins.extend(cell_bins.iter());
         cell_bins = new_bins;
     }
@@ -70,7 +68,7 @@ fn bins_for_cells(bound_cell_offsets: &[i32], face_width: u32) -> Vec<i32> {
     if cell_bins.len() < face_width as usize + 2 {
         let deficit = face_width as usize + 2 - cell_bins.len();
         let mut new_bins = cell_bins;
-        new_bins.extend(vec![i32::max_value(); deficit].iter());
+        new_bins.extend(vec![None; deficit].iter());
         cell_bins = new_bins;
     } else if cell_bins.len() > face_width as usize + 2 {
         let new_bins = cell_bins;
@@ -229,10 +227,11 @@ pub fn draw_histogram(h: &histogram::Histogram) {
 
     // counts per bin converted to rows per column
     let cell_heights = Vec::from_iter(cell_bins.iter()
-        .map(|&bin| if bin == i32::min_value() || bin == i32::max_value() {
-            0
-        } else {
-            value_to_axis_cell_offset(h.bin_counts[bin as usize] as f64, &y_axis, face_height)
+        .map(|&bin| match bin {
+            None => 0,
+            Some(b) => {
+                value_to_axis_cell_offset(h.bin_counts[b as usize] as f64, &y_axis, face_height)
+            }
         }));
 
     let mut face_strings: Vec<String> = vec![];
@@ -240,6 +239,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     for line in 1..face_height + 1 {
         let mut line_string = String::new();
         for column in 1..face_width + 1 {
+            // maybe use a HashSet for faster `contains()`?
             line_string.push(if bound_cells.contains(&(column as i32)) {
                 // The value of the column _below_ this one
                 let b = cell_heights[column - 1].cmp(&(line as i32));
@@ -338,28 +338,33 @@ mod tests {
     #[test]
     fn test_bins_for_cells() {
         let face_width = 10;
-        let n = i32::min_value(); // represents a cell below all the bins
-        let p = i32::max_value(); // represents a cell above all the bins
-        assert_eq!(bins_for_cells(&vec![-4, -1, 4, 7, 10], face_width),
-                   [1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, p]);
-        assert_eq!(bins_for_cells(&vec![0, 2, 4, 8, 10], face_width),
-                   [n, 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, p]);
-        assert_eq!(bins_for_cells(&vec![3, 5, 7, 9, 10], face_width),
-                   [n, n, n, n, 0, 0, 1, 1, 2, 2, 3, p]);
-        assert_eq!(bins_for_cells(&vec![0, 2, 4, 6, 8], face_width),
-                   [n, 0, 0, 1, 1, 2, 2, 3, 3, p, p, p]);
-        assert_eq!(bins_for_cells(&vec![0, 3, 6, 9, 12], face_width),
+        let n = i32::max_value();
+        let run_bins_for_cells = |bound_cell_offsets: &[i32]| {
+            Vec::from_iter(bins_for_cells(&bound_cell_offsets, face_width)
+                .iter()
+                .map(|&a| a.unwrap_or(n)))
+        };
+
+        assert_eq!(run_bins_for_cells(&vec![-4, -1, 4, 7, 10]),
+                   [1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, n]);
+        assert_eq!(run_bins_for_cells(&vec![0, 2, 4, 8, 10]),
+                   [n, 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, n]);
+        assert_eq!(run_bins_for_cells(&vec![3, 5, 7, 9, 10]),
+                   [n, n, n, n, 0, 0, 1, 1, 2, 2, 3, n]);
+        assert_eq!(run_bins_for_cells(&vec![0, 2, 4, 6, 8]),
+                   [n, 0, 0, 1, 1, 2, 2, 3, 3, n, n, n]);
+        assert_eq!(run_bins_for_cells(&vec![0, 3, 6, 9, 12]),
                    [n, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3]);
 
-        assert_eq!(bins_for_cells(&vec![-5, -4, -3, -1, 0], face_width),
-                   [3, p, p, p, p, p, p, p, p, p, p, p]);
-        assert_eq!(bins_for_cells(&vec![10, 12, 14, 16, 18], face_width),
+        assert_eq!(run_bins_for_cells(&vec![-5, -4, -3, -1, 0]),
+                   [3, n, n, n, n, n, n, n, n, n, n, n]);
+        assert_eq!(run_bins_for_cells(&vec![10, 12, 14, 16, 18]),
                    [n, n, n, n, n, n, n, n, n, n, n, 0]);
 
-        assert_eq!(bins_for_cells(&vec![15, 16, 17, 18, 19], face_width),
+        assert_eq!(run_bins_for_cells(&vec![15, 16, 17, 18, 19]),
                    [n, n, n, n, n, n, n, n, n, n, n, n]);
-        assert_eq!(bins_for_cells(&vec![-19, -18, -17, -16, -15], face_width),
-                   [p, p, p, p, p, p, p, p, p, p, p, p]);
+        assert_eq!(run_bins_for_cells(&vec![-19, -18, -17, -16, -1]),
+                   [n, n, n, n, n, n, n, n, n, n, n, n]);
     }
 
     #[test]
