@@ -71,15 +71,18 @@ fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
     if min <= 0.0 {
         if max >= 0.0 {
             // standard spanning axis
+            ticks.extend((1..).map(|n| -1.0 * n as f64 * step_size).take_while(|&v| v >= min).collect::<Vec<f64>>().iter().rev());
             ticks.push(0.0);
-            ticks.extend((1..).map(|n| -1.0 * n as f64 * step_size).take_while(|&v| v >= min));
             ticks.extend((1..).map(|n| n as f64 * step_size).take_while(|&v| v <= max));
         } else {
             // entirely negative axis
             ticks.extend((1..)
                 .map(|n| -1.0 * n as f64 * step_size)
                 .skip_while(|&v| v > max)
-                .take_while(|&v| v >= min));
+                .take_while(|&v| v >= min)
+                .collect::<Vec<f64>>()
+                .iter()
+                .rev());
         }
     } else {
         // entirely positive axis
@@ -88,7 +91,6 @@ fn generate_ticks(min: f64, max: f64, step_size: f64) -> Vec<f64> {
             .skip_while(|&v| v < min)
             .take_while(|&v| v <= max));
     }
-    ticks.sort_by(|a, b| a.partial_cmp(b).expect("ERROR: Invalid tick value found"));
     ticks
 }
 
@@ -250,5 +252,7 @@ mod tests {
         //...
         assert_eq!(calculate_ticks(0.0, 3475.0, 6),
                    [0.0, 1000.0, 2000.0, 3000.0]);
+
+        assert_eq!(calculate_ticks(-10.0, -3.0, 6), [-10.0, -8.0, -6.0, -4.0]);
     }
 }
