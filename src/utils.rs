@@ -1,10 +1,13 @@
 use std;
 
-pub fn pairwise<T>(container: &[T])
-                   -> std::iter::Zip<std::slice::Iter<T>, std::iter::Skip<std::slice::Iter<T>>> {
-    let first = container.iter();
-    let second = container.iter().skip(1);
-    first.zip(second)
+pub trait PairWise<T> {
+    fn pairwise(&self) -> std::iter::Zip<std::slice::Iter<T>, std::iter::Skip<std::slice::Iter<T>>>;
+}
+
+impl<T> PairWise<T> for [T] {
+    fn pairwise(&self) -> std::iter::Zip<std::slice::Iter<T>, std::iter::Skip<std::slice::Iter<T>>> {
+        self.iter().zip(self.iter().skip(1))
+    }
 }
 
 #[cfg(test)]
@@ -14,16 +17,19 @@ mod tests {
     #[test]
     fn test_pairwise() {
         let a = [1, 2, 3, 4, 5];
-        assert_eq!(pairwise(&a).nth(0).unwrap(), (&1, &2));
-        assert_eq!(pairwise(&a).last().unwrap(), (&4, &5));
-        assert_eq!(pairwise(&a).len(), a.len() - 1);
+        assert_eq!(a.pairwise().nth(0).unwrap(), (&1, &2));
+        assert_eq!(a.pairwise().last().unwrap(), (&4, &5));
+        assert_eq!(a.pairwise().len(), a.len() - 1);
 
         let a = [1, 2];
-        assert_eq!(pairwise(&a).nth(0).unwrap(), (&1, &2));
-        assert_eq!(pairwise(&a).last().unwrap(), (&1, &2));
-        assert_eq!(pairwise(&a).len(), a.len() - 1);
+        assert_eq!(a.pairwise().nth(0).unwrap(), (&1, &2));
+        assert_eq!(a.pairwise().last().unwrap(), (&1, &2));
+        assert_eq!(a.pairwise().len(), a.len() - 1);
 
         let a = [1];
-        assert!(pairwise(&a).nth(0).is_none());
+        assert!(a.pairwise().nth(0).is_none());
+
+        let b: Vec<f64> = vec![0.0, 0.1, 0.2];
+        assert_eq!(b.pairwise().nth(0).unwrap(), (&0.0, &0.1));
     }
 }
