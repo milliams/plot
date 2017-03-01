@@ -1,6 +1,6 @@
-mod histogram;
+extern crate plotlib;
+
 mod render;
-mod axis;
 mod utils;
 
 use std::io::{self, BufRead};
@@ -25,7 +25,7 @@ fn get_single_column() -> Vec<f64> {
 pub fn hist() {
     let data = get_single_column();
 
-    let h = histogram::Histogram::from_vec(&data);
+    let h = plotlib::histogram::Histogram::from_vec(&data);
 
     render::draw_histogram(&h);
 }

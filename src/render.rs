@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 use std;
 
-use histogram;
-use axis;
+use plotlib::histogram;
+use plotlib::axis;
 use utils::PairWise;
 
 // Given a value like a tick label or a bin count,

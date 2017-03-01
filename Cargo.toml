@@ -14,5 +14,8 @@ travis-ci = { repository = "https://github.com/milliams/plot", branch = "master"
 name = "main"
 doc = false
 
+[workspace]
+
 [dependencies]
 clap = "2.20.4"
+plotlib = { path = "plotlib" }
