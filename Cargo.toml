@@ -10,5 +10,9 @@ categories = ["command-line-utilities", "visualization"]
 [badges]
 travis-ci = { repository = "https://github.com/milliams/plot", branch = "master" }
 
+[[bin]]
+name = "main"
+doc = false
+
 [dependencies]
 clap = "2.20.4"
