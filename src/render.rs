@@ -29,10 +29,10 @@ fn tick_offset_map(axis: &axis::Axis, face_width: u32) -> HashMap<i32, f64> {
 /// the total scale of the axis
 /// and the number of face cells to work with,
 /// create a mapping of cell offset to bin bound
-fn bound_cell_offsets(hist: &histogram::Histogram, axis: &axis::Axis, face_width: u32) -> Vec<i32> {
+fn bound_cell_offsets(hist: &histogram::Histogram, face_width: u32) -> Vec<i32> {
     hist.bin_bounds
         .iter()
-        .map(|&bound| value_to_axis_cell_offset(bound, axis, face_width))
+        .map(|&bound| value_to_axis_cell_offset(bound, &hist.x_axis, face_width))
         .collect()
 }
 
@@ -123,12 +123,10 @@ fn create_x_axis_labels(x_tick_map: &HashMap<i32, f64>) -> Vec<XAxisLabel> {
 /// and the face height and width,
 /// create the strings to be drawn as the face
 fn render_face_bars(h: &histogram::Histogram,
-                    x_axis: &axis::Axis,
-                    y_axis: &axis::Axis,
                     face_width: u32,
                     face_height: u32)
                     -> Vec<String> {
-    let bound_cells = bound_cell_offsets(h, x_axis, face_width);
+    let bound_cells = bound_cell_offsets(&h, face_width);
 
     let cell_bins = bins_for_cells(&bound_cells, face_width);
 
@@ -137,7 +135,7 @@ fn render_face_bars(h: &histogram::Histogram,
         .map(|&bin| match bin {
             None => 0,
             Some(b) => {
-                value_to_axis_cell_offset(h.bin_counts[b as usize] as f64, y_axis, face_height)
+                value_to_axis_cell_offset(h.bin_counts[b as usize] as f64, &h.y_axis, face_height)
             }
         })
         .collect();
@@ -201,9 +199,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     ////////////
 
     // Get the strings and offsets we'll use for the y-axis
-    let largest_bin_count = *h.bin_counts.iter().max().expect("ERROR: There are no bins");
-    let y_axis = axis::Axis::new(0.0, largest_bin_count as f64);
-    let y_tick_map = tick_offset_map(&y_axis, face_height);
+    let y_tick_map = tick_offset_map(&h.y_axis, face_height);
 
     // Find a minimum size for the left gutter
     let longest_y_label_width = y_tick_map.values()
@@ -238,10 +234,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     ////////////
 
     // Get the strings and offsets we'll use for the x-axis
-    let x_min = *h.bin_bounds.first().expect("ERROR: There are no ticks for the x-axis");
-    let x_max = *h.bin_bounds.last().expect("ERROR: There are no ticks for the x-axis");
-    let x_axis = axis::Axis::new(x_min, x_max);
-    let x_tick_map = tick_offset_map(&x_axis, face_width as u32);
+    let x_tick_map = tick_offset_map(&h.x_axis, face_width as u32);
 
     // Create a string which will be printed to give the x-axis tick marks
     let x_axis_tick_string: String = (0..face_width + 1)
@@ -286,7 +279,7 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     // Face //
     //////////
 
-    let face_strings = render_face_bars(&h, &x_axis, &y_axis, face_width as u32, face_height);
+    let face_strings = render_face_bars(&h, face_width as u32, face_height);
 
     /////////////
     // Drawing //
