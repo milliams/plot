@@ -5,6 +5,10 @@ mod utils;
 
 use std::io::{self, BufRead};
 
+pub struct HistogramConfig {
+    pub nbins: u32,
+}
+
 /// Get a single column of data from stdin
 ///
 /// For each line in the input, it tries to convert it to an `f64`.
@@ -22,10 +26,10 @@ fn get_single_column() -> Vec<f64> {
     data
 }
 
-pub fn hist() {
+pub fn hist(config: HistogramConfig) {
     let data = get_single_column();
 
-    let h = plotlib::histogram::Histogram::from_vec(&data);
+    let h = plotlib::histogram::Histogram::from_vec(&data, config.nbins);
 
     render::draw_histogram(&h);
 }
