@@ -1,11 +1,12 @@
-use std;
+use std::iter::{Zip, Skip};
+use std::slice::Iter;
 
 pub trait PairWise<T> {
-    fn pairwise(&self) -> std::iter::Zip<std::slice::Iter<T>, std::iter::Skip<std::slice::Iter<T>>>;
+    fn pairwise(&self) -> Zip<Iter<T>, Skip<Iter<T>>>;
 }
 
 impl<T> PairWise<T> for [T] {
-    fn pairwise(&self) -> std::iter::Zip<std::slice::Iter<T>, std::iter::Skip<std::slice::Iter<T>>> {
+    fn pairwise(&self) -> Zip<Iter<T>, Skip<Iter<T>>> {
         self.iter().zip(self.iter().skip(1))
     }
 }
