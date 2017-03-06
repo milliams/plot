@@ -25,12 +25,45 @@ fn get_single_column() -> Vec<f64> {
     data
 }
 
+fn get_two_columns() -> Vec<(f64, f64)> {
+    let stdin = io::stdin();
+    let mut data: Vec<(f64, f64)> = vec![];
+    for line in stdin.lock().lines() {
+        let line_text = match line {
+            Ok(line) => line,
+            Err(err) => panic!("IO error: {}", err),
+        };
+        let nums: Vec<_> = line_text.split_whitespace().collect();
+        if nums.len() != 2 {
+            panic!("Wrong number of args on line");
+        }
+        let a = nums[0];
+        let b = nums[1];
+
+        let a = a.parse::<f64>()
+            .expect(&format!("ERROR: Could not parse '{}' as an f64", a));
+        let b = b.parse::<f64>()
+            .expect(&format!("ERROR: Could not parse '{}' as an f64", b));
+
+        data.push((a, b));
+    }
+    data
+}
+
 pub fn hist(config: HistogramConfig) {
     let data = get_single_column();
 
     let h = plotlib::histogram::Histogram::from_vec(&data, config.nbins);
 
     render::draw_histogram(&h);
+}
+
+pub fn scatter() {
+    let data = get_two_columns();
+
+    let h = plotlib::scatter::Scatter::from_vec(&data);
+
+    render::draw_scatter(&h);
 }
 
 pub fn average() {

@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std;
 
 use plotlib::histogram;
+use plotlib::scatter;
 use plotlib::axis;
 use plotlib::utils::PairWise;
 
@@ -325,6 +326,11 @@ pub fn draw_histogram(h: &histogram::Histogram) {
              x_axis_label_string,
              start_offset = (left_gutter_width as i32 + start_offset) as usize,
              plot_width = (face_width as i32 + 1 + start_offset) as usize);
+}
+
+
+pub fn draw_scatter(s: &scatter::Scatter) {
+    println!("x_min: {} x_max: {} y_min: {} y_max: {}", s.x_axis.min(), s.x_axis.max(), s.y_axis.min(), s.y_axis.max());
 }
 
 #[cfg(test)]
