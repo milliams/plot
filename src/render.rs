@@ -5,7 +5,7 @@ use std;
 
 use plotlib::histogram;
 use plotlib::axis;
-use utils::PairWise;
+use plotlib::utils::PairWise;
 
 // Given a value like a tick label or a bin count,
 // calculate how far from the x-axis it should be plotted
@@ -122,10 +122,7 @@ fn create_x_axis_labels(x_tick_map: &HashMap<i32, f64>) -> Vec<XAxisLabel> {
 /// the x ands y-axes
 /// and the face height and width,
 /// create the strings to be drawn as the face
-fn render_face_bars(h: &histogram::Histogram,
-                    face_width: u32,
-                    face_height: u32)
-                    -> Vec<String> {
+fn render_face_bars(h: &histogram::Histogram, face_width: u32, face_height: u32) -> Vec<String> {
     let bound_cells = bound_cell_offsets(&h, face_width);
 
     let cell_bins = bins_for_cells(&bound_cells, face_width);

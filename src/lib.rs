@@ -1,7 +1,6 @@
 extern crate plotlib;
 
 mod render;
-mod utils;
 
 use std::io::{self, BufRead};
 
