@@ -20,7 +20,7 @@ fn main() {
         .about("plots a scatter plot of the data");
 
     let matches = App::new("plot")
-        .about("Does awesome things")
+        .about("Command-line plotting and statistics")
         .subcommand(SubCommand::with_name("average")
             .about("computes the average of the input stream"))
         .subcommand(hist_s)
