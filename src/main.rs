@@ -16,8 +16,7 @@ fn main() {
             .takes_value(true)
             .default_value("30"));
 
-    let scatter_s = SubCommand::with_name("scatter")
-        .about("plots a scatter plot of the data");
+    let scatter_s = SubCommand::with_name("scatter").about("plots a scatter plot of the data");
 
     let matches = App::new("plot")
         .about("Command-line plotting and statistics")
