@@ -119,7 +119,9 @@ fn create_x_axis_labels(x_tick_map: &HashMap<i32, f64>) -> Vec<XAxisLabel> {
     ls
 }
 
-fn render_y_axis_strings(y_axis: &axis::Axis, face_height: u32) -> (Vec<String>, Vec<String>, Vec<String>, i32) {
+fn render_y_axis_strings(y_axis: &axis::Axis,
+                         face_height: u32)
+                         -> (Vec<String>, Vec<String>, Vec<String>, i32) {
     // Get the strings and offsets we'll use for the y-axis
     let y_tick_map = tick_offset_map(&y_axis, face_height);
 
@@ -307,13 +309,15 @@ pub fn draw_histogram(h: &histogram::Histogram) {
     // Y Axis //
     ////////////
 
-    let (y_label_strings, y_tick_strings, y_axis_line_strings, longest_y_label_width) = render_y_axis_strings(&h.y_axis, face_height);
+    let (y_label_strings, y_tick_strings, y_axis_line_strings, longest_y_label_width) =
+        render_y_axis_strings(&h.y_axis, face_height);
 
     ////////////
     // X Axis //
     ////////////
 
-    let (x_axis_label_string, x_axis_tick_string, x_axis_line_string, start_offset) = render_x_axis_strings(&h.x_axis, face_width);
+    let (x_axis_label_string, x_axis_tick_string, x_axis_line_string, start_offset) =
+        render_x_axis_strings(&h.x_axis, face_width);
 
     //////////
     // Face //
@@ -378,13 +382,15 @@ pub fn draw_scatter(s: &scatter::Scatter) {
     // Y Axis //
     ////////////
 
-    let (y_label_strings, y_tick_strings, y_axis_line_strings, longest_y_label_width) = render_y_axis_strings(&s.y_axis, face_height);
+    let (y_label_strings, y_tick_strings, y_axis_line_strings, longest_y_label_width) =
+        render_y_axis_strings(&s.y_axis, face_height);
 
     ////////////
     // X Axis //
     ////////////
 
-    let (x_axis_label_string, x_axis_tick_string, x_axis_line_string, start_offset) = render_x_axis_strings(&s.x_axis, face_width);
+    let (x_axis_label_string, x_axis_tick_string, x_axis_line_string, start_offset) =
+        render_x_axis_strings(&s.x_axis, face_width);
 
     //////////
     // Face //
