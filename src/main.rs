@@ -9,22 +9,27 @@ use plot::HistogramConfig;
 
 fn main() {
     let hist_s = SubCommand::with_name("hist")
-        .about("plots a histogram of the data")
+        .about("Plots a histogram of the data")
+        .after_help("Given an input stream with one number per line, plot a histogram of the \
+                     data,")
         .arg(Arg::with_name("nbins")
             .long("nbins")
             .help("number of bins")
             .takes_value(true)
             .default_value("30"));
 
-    let scatter_s = SubCommand::with_name("scatter").about("plots a scatter plot of the data");
+    let scatter_s = SubCommand::with_name("scatter")
+        .about("Plots a scatter plot of the data")
+        .after_help("Given an input stream of two columns of numbers, plots the second against \
+                     the first");
 
     let matches = App::new("plot")
         .about("Command-line plotting and statistics")
         .subcommand(SubCommand::with_name("average")
-            .about("computes the average of the input stream"))
+            .about("Computes the average of the input stream"))
         .subcommand(hist_s)
         .subcommand(scatter_s)
-        .subcommand(SubCommand::with_name("stats").about("print some statistics about the data"))
+        .subcommand(SubCommand::with_name("stats").about("Print some statistics about the data"))
         .get_matches();
 
     match matches.subcommand() {
