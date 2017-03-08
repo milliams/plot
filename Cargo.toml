@@ -11,7 +11,7 @@ categories = ["command-line-utilities", "visualization"]
 travis-ci = { repository = "https://github.com/milliams/plot", branch = "master" }
 
 [[bin]]
-name = "main"
+name = "plot"
 doc = false
 
 [workspace]
