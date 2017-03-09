@@ -1,6 +1,6 @@
 [root]
 name = "plot"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap 2.20.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "plotlib 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
