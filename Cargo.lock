@@ -1,6 +1,10 @@
 [root]
-name = "plotlib"
+name = "plot"
 version = "0.1.0"
+dependencies = [
+ "clap 2.20.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plotlib 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "ansi_term"
@@ -42,12 +46,9 @@ version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "plot"
+name = "plotlib"
 version = "0.1.0"
-dependencies = [
- "clap 2.20.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "plotlib 0.1.0",
-]
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "strsim"
@@ -95,6 +96,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum clap 2.20.5 (registry+https://github.com/rust-lang/crates.io-index)" = "7db281b0520e97fbd15cd615dcd8f8bcad0c26f5f7d5effe705f090f39e9a758"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum libc 0.2.21 (registry+https://github.com/rust-lang/crates.io-index)" = "88ee81885f9f04bff991e306fea7c1c60a5f0f9e409e99f6b40e3311a3363135"
+"checksum plotlib 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6de7dbc6095e910d2a6c9828924847952e498177e6da0afb46deeb734180b67b"
 "checksum strsim 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b4d15c810519a91cf877e7e36e63fe068815c678181439f2f29e2562147c3694"
 "checksum term_size 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "07b6c1ac5b3fffd75073276bca1ceed01f67a28537097a2a9539e116e50fb21a"
 "checksum unicode-segmentation 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "18127285758f0e2c6cf325bb3f3d138a12fee27de4f23e146cd6a179f26c2cf3"

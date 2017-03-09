@@ -18,4 +18,4 @@ doc = false
 
 [dependencies]
 clap = "2"
-plotlib = { path = "plotlib", version="0.1.0" }
+plotlib = "0.1.0"
