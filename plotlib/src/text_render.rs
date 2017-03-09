@@ -3,10 +3,10 @@
 use std::collections::HashMap;
 use std;
 
-use plotlib::histogram;
-use plotlib::scatter;
-use plotlib::axis;
-use plotlib::utils::PairWise;
+use histogram;
+use scatter;
+use axis;
+use utils::PairWise;
 
 // Given a value like a tick label or a bin count,
 // calculate how far from the x-axis it should be plotted

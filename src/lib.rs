@@ -1,7 +1,5 @@
 extern crate plotlib;
 
-mod render;
-
 use std::io::{self, BufRead};
 
 pub struct HistogramConfig {
@@ -55,7 +53,7 @@ pub fn hist(config: HistogramConfig) {
 
     let h = plotlib::histogram::Histogram::from_vec(&data, config.nbins);
 
-    render::draw_histogram(&h);
+    plotlib::text_render::draw_histogram(&h);
 }
 
 pub fn scatter() {
@@ -63,7 +61,7 @@ pub fn scatter() {
 
     let h = plotlib::scatter::Scatter::from_vec(&data);
 
-    render::draw_scatter(&h);
+    plotlib::text_render::draw_scatter(&h);
 }
 
 pub fn average() {
